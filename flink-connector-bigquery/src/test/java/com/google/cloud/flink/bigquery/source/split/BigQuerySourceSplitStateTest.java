@@ -59,7 +59,7 @@ public class BigQuerySourceSplitStateTest {
         BigQuerySourceSplitState splitState3 = new BigQuerySourceSplitState(split3);
         assertThat(splitState1).isNotEqualTo(splitState3);
 
-        //Check default split constructor for offset.
+        // Check default split constructor for offset.
         BigQuerySourceSplit defaultSplit = new BigQuerySourceSplit("defaultSplit");
         assertThat(defaultSplit.getOffset()).isEqualTo(0);
         assertThat(defaultSplit).isNotEqualTo(split1);
