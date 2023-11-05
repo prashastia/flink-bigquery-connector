@@ -72,16 +72,19 @@ public class BigQuerySourceSplitAssigner {
 
     /**
      * Override of hashcode method for {@link BigQuerySourceSplitAssigner} class.
+     *
      * @return hashCode of the current object
      */
     @Override
-    public int hashCode(){
+    public int hashCode() {
 
-        return Objects.hash(this.readOptions,
+        return Objects.hash(
+                this.readOptions,
                 this.remainingTableStreams,
                 this.alreadyProcessedTableStreams,
                 this.remainingSourceSplits,
-                this.assignedSourceSplits, this.initialized);
+                this.assignedSourceSplits,
+                this.initialized);
     }
     /**
      * Method to check if two ArrayDeque are equal.
