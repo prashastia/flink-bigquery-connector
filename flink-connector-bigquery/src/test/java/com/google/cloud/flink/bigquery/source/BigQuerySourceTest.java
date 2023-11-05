@@ -87,10 +87,7 @@ public class BigQuerySourceTest {
                 RuntimeException.class,
                 () ->
                         BigQuerySource.readAvrosFromQuery(
-                                readOptions,
-                                query,
-                                queryExecutionProject,
-                                -1));
+                                readOptions, query, queryExecutionProject, -1));
     }
 
     /**
@@ -128,7 +125,6 @@ public class BigQuerySourceTest {
                                                 .toString()))
                         .setReadOptions(readOptions)
                         .build();
-
         SplitEnumeratorContext<BigQuerySourceSplit> enumContext =
                 Mockito.mock(SplitEnumeratorContext.class);
 
