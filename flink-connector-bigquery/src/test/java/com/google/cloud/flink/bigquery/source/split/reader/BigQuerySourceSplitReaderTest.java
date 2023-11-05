@@ -151,7 +151,7 @@ public class BigQuerySourceSplitReaderTest {
                         10,
                         1,
                         StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING,
-                        params -> StorageClientFaker.createRecordList(params),
+                        StorageClientFaker::createRecordList,
                         // Changed the error percentage to 100% so that it always fails.
                         100D);
 
@@ -223,7 +223,7 @@ public class BigQuerySourceSplitReaderTest {
         reader.close();
 
         // Exception should be thrown as the reader is closed.
-        assertThrows(IllegalStateException.class, () -> reader.fetch());
+        assertThrows(IllegalStateException.class, reader::fetch);
     }
 
     /**
@@ -258,7 +258,7 @@ public class BigQuerySourceSplitReaderTest {
         RecordsWithSplitIds<GenericRecord> records = reader.fetch();
         BigQuerySourceSplitState splitState = new BigQuerySourceSplitState(split);
 
-        String firstSplit = records.nextSplit();
+        records.nextSplit();
         // We update the split state
         int recordsFetched = 0;
         while (records.nextRecordFromSplit() != null) {
