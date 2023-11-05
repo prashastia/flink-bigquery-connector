@@ -179,8 +179,9 @@ public class BigQuerySourceSplitReaderTest {
     }
 
     /**
-     * - Test to check if invalid read options are dealt with and to check if reading with a closed
+     * Test to check if invalid read options are dealt with and to check if reading with a closed
      * reader is dealt with
+     * @throws Exception when close() fails, or createReadOptions fails
      */
     @Test
     public void testErrorHandling() throws Exception {
