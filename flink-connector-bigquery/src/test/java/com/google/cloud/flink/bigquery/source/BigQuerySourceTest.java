@@ -73,19 +73,23 @@ public class BigQuerySourceTest {
      * Test that checks the handling of failing query options.
      *
      * @throws IOException when createInvalidQueryReadOptions() fails
+     * @throws RuntimeException when getQuery() or getQueryExecutionProject() fails.
      */
     @Test
-    public void testFailingReadAvrosFromQuery() throws IOException {
+    public void testFailingReadAvrosFromQuery() throws IOException, RuntimeException {
         BigQueryReadOptions readOptions =
                 StorageClientFaker.createInvalidQueryReadOptions(
                         10, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+
+        String query = readOptions.getQuery();
+        String queryExecutionProject = readOptions.getQueryExecutionProject();
         assertThrows(
                 RuntimeException.class,
                 () ->
                         BigQuerySource.readAvrosFromQuery(
                                 readOptions,
-                                readOptions.getQuery(),
-                                readOptions.getQueryExecutionProject(),
+                                query,
+                                queryExecutionProject,
                                 -1));
     }
 
