@@ -181,6 +181,7 @@ public class BigQuerySourceSplitReaderTest {
     /**
      * Test to check if invalid read options are dealt with and to check if reading with a closed
      * reader is dealt with
+     *
      * @throws Exception when close() fails, or createReadOptions fails
      */
     @Test
@@ -281,5 +282,40 @@ public class BigQuerySourceSplitReaderTest {
             recordsFetched++;
         }
         assertThat(recordsFetched).isEqualTo(totalRecordCount);
+    }
+
+    /**
+     * Test to check if Response without Avro Schema are handled. For this we mock an Arrow Schema
+     * using createArrowReadOptions() in {@link StorageClientFaker} class.
+     *
+     * @throws IOException when createArrowReadOptions fails.
+     */
+    @Test
+    public void testInvalidAvro() throws IOException {
+
+        BigQueryReadOptions readOptions =
+                StorageClientFaker.createArrowReadOptions(
+                        10, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+        SourceReaderContext readerContext = Mockito.mock(SourceReaderContext.class);
+        BigQuerySourceReaderContext context = new BigQuerySourceReaderContext(readerContext, -1);
+        Mockito.when(readerContext.getConfiguration()).thenReturn(new Configuration());
+        BigQuerySourceSplitReader reader = new BigQuerySourceSplitReader(readOptions, context);
+        // wake the thing up
+        reader.wakeUp();
+
+        String splitName = "stream1";
+        BigQuerySourceSplit split = new BigQuerySourceSplit(splitName, 0L);
+        SplitsAddition<BigQuerySourceSplit> change =
+                new SplitsAddition<>(Lists.newArrayList(split));
+
+        // send an assignment
+        reader.handleSplitsChanges(change);
+
+        // this should fetch us some data
+        RecordsWithSplitIds<GenericRecord> records = reader.fetch();
+
+        // MAKE SURE WE HAVE AN EMPTY RECORD LIST
+
+        assertThat(records.nextSplit()).isNull();
     }
 }

@@ -27,6 +27,8 @@ import com.google.api.services.bigquery.model.JobStatistics2;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
+import com.google.cloud.bigquery.storage.v1.ArrowRecordBatch;
+import com.google.cloud.bigquery.storage.v1.ArrowSchema;
 import com.google.cloud.bigquery.storage.v1.AvroRows;
 import com.google.cloud.bigquery.storage.v1.AvroSchema;
 import com.google.cloud.bigquery.storage.v1.CreateReadSessionRequest;
@@ -248,6 +250,47 @@ public class StorageClientFaker {
             public void cancel() {}
         }
 
+        /**
+         * Class implementing the {@link
+         * com.google.cloud.flink.bigquery.services.BigQueryServices.BigQueryServerStream} interface
+         * for generating a response that does not have AvroRows or AvroSchema (done via adding
+         * ARROW Schema)
+         */
+        public static class FakeBigQueryArrowServerStream
+                implements BigQueryServices.BigQueryServerStream<ReadRowsResponse> {
+
+            private final List<ReadRowsResponse> toReturn;
+            private final Double errorPercentage;
+
+            public FakeBigQueryArrowServerStream(
+                    SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
+                    String schema,
+                    String dataPrefix,
+                    Long size,
+                    Long offset,
+                    Double errorPercentage) {
+                this.toReturn =
+                        createArrowResponse(
+                                schema,
+                                dataGenerator
+                                        .apply(new RecordGenerationParams(schema, size.intValue()))
+                                        .stream()
+                                        .skip(offset)
+                                        .collect(Collectors.toList()),
+                                0,
+                                size);
+                this.errorPercentage = errorPercentage;
+            }
+
+            @Override
+            public Iterator<ReadRowsResponse> iterator() {
+                return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
+            }
+
+            @Override
+            public void cancel() {}
+        }
+
         /** Implementation for the storage read client for testing purposes. */
         public static class FakeBigQueryStorageReadClient implements StorageReadClient {
 
@@ -277,6 +320,16 @@ public class StorageClientFaker {
                 return session;
             }
 
+            /**
+             * Creates Server Stream corresponding to the Request. 1. In case schema has a marker
+             * "invalid_table" in the table field: 1.1 Creates an FakeBigQueryErrorServerStream
+             * which always throws an error instead of a response 2. In case request does not have
+             * an Avro schema: 2.1 Creates a FakeBigQueryArrowServerStream that creates a stream
+             * with Arrow schema. 3. FakeBigQueryServerStream otherwise.
+             *
+             * @param request The request for the storage API
+             * @return Requested ServerStream
+             */
             @Override
             public BigQueryServerStream<ReadRowsResponse> readRows(ReadRowsRequest request) {
                 try {
@@ -289,6 +342,16 @@ public class StorageClientFaker {
                     return new FakeBigQueryErrorServerStream(
                             dataGenerator,
                             session.getAvroSchema().getSchema(),
+                            request.getReadStream(),
+                            session.getEstimatedRowCount(),
+                            request.getOffset(),
+                            errorPercentage);
+                }
+                // Case where we create an ARROW Schema
+                if (session.hasArrowSchema()) {
+                    return new FakeBigQueryArrowServerStream(
+                            dataGenerator,
+                            SIMPLE_AVRO_SCHEMA_STRING,
                             request.getReadStream(),
                             session.getEstimatedRowCount(),
                             request.getOffset(),
@@ -386,14 +449,14 @@ public class StorageClientFaker {
     }
 
     /**
-     * Static Method to create readOptions that always throw an error in response. This is done via
-     * setting the table field as "invalid_table" in the schema. which when used to create the
+     * Static Method to create readSession that always throw an error in response. This is done by
+     * setting the table field as "invalid_table" in the schema. Which when used to create the
      * serverStream invoke invalidReadOptions() that in turn is responsible for throwing the error.
      *
      * @param expectedRowCount The number of expected rows
      * @param expectedReadStreamCount The number of expected splits/streams
      * @param avroSchemaString The string representing avroschema
-     * @return
+     * @return a read Session with table as "invalid_table"
      */
     public static ReadSession fakeInvalidReadSession(
             Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString) {
@@ -408,6 +471,35 @@ public class StorageClientFaker {
                 .setDataFormat(DataFormat.AVRO)
                 .setTable("invalid_table")
                 .setAvroSchema(AvroSchema.newBuilder().setSchema(avroSchemaString))
+                .build();
+    }
+
+    /**
+     * Static Method to create readSession that does not contain an avro schema. This is done by
+     * setting the data format field as ARROW. which when used to create the serverStream invoke
+     * ArrowReadOptions() that in turn is responsible for creating the arrow schema.
+     *
+     * @param expectedRowCount The number of expected rows
+     * @param expectedReadStreamCount The number of expected splits/streams
+     * @param arrowSchemaString The string representing arrow schema
+     * @return a read Session with arrow schema (definitely does not have avro schema)
+     */
+    public static ReadSession fakeArrowReadSession(
+            Integer expectedRowCount, Integer expectedReadStreamCount, String arrowSchemaString) {
+        // setup the response for read session request
+        List<ReadStream> readStreams =
+                IntStream.range(0, expectedReadStreamCount)
+                        .mapToObj(i -> ReadStream.newBuilder().setName("stream" + i).build())
+                        .collect(Collectors.toList());
+        return ReadSession.newBuilder()
+                .addAllStreams(readStreams)
+                .setEstimatedRowCount(expectedRowCount)
+                .setArrowSchema(
+                        ArrowSchema.newBuilder()
+                                .setSerializedSchema(ByteString.copyFromUtf8(arrowSchemaString))
+                                .build())
+                // Set as ARROW.
+                .setDataFormat(DataFormat.ARROW)
                 .build();
     }
 
@@ -481,13 +573,13 @@ public class StorageClientFaker {
     }
 
     /**
-     * Method ts throw an error inplace of readOptions.
+     * Method to create a {@link ReadRowsResponse} that throws an error inplace of valid rows.
      *
      * @param schemaString the schema String
      * @param genericRecords records
      * @param progressAtResponseStart Start time for progress logging
      * @param progressAtResponseEnd end time for progress logging
-     * @return
+     * @return Always throws Runtime Exception.
      */
     @SuppressWarnings("deprecation")
     public static List<ReadRowsResponse> createInvalidResponse(
@@ -496,6 +588,74 @@ public class StorageClientFaker {
             double progressAtResponseStart,
             double progressAtResponseEnd) {
         throw new RuntimeException("Problems generating faked response.");
+    }
+
+    /**
+     * Method to create a {@link ReadRowsResponse} that do not contain Avro Schema, contain Arrow
+     * schema instead.
+     *
+     * @param schemaString
+     * @param genericRecords
+     * @param progressAtResponseStart
+     * @param progressAtResponseEnd
+     * @return List of rows without Avro Schema.
+     */
+    @SuppressWarnings("deprecation")
+    public static List<ReadRowsResponse> createArrowResponse(
+            String schemaString,
+            List<GenericRecord> genericRecords,
+            double progressAtResponseStart,
+            double progressAtResponseEnd) {
+        // BigQuery delivers the data in 1024 elements chunks, so we partition the generated list
+        // into multiple ones with that size max.
+        List<List<GenericRecord>> responsesData = Lists.partition(genericRecords, 1024);
+
+        return responsesData.stream()
+                // for each data response chunk we generate a read response object
+                .map(
+                        genRecords -> {
+                            try {
+                                Schema schema = new Schema.Parser().parse(schemaString);
+                                GenericDatumWriter<GenericRecord> writer =
+                                        new GenericDatumWriter<>(schema);
+                                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                                Encoder binaryEncoder =
+                                        ENCODER_FACTORY.binaryEncoder(outputStream, null);
+                                for (GenericRecord genericRecord : genRecords) {
+                                    writer.write(genericRecord, binaryEncoder);
+                                }
+
+                                binaryEncoder.flush();
+                                // Removed the Avro Schema from the response.
+                                return ReadRowsResponse.newBuilder()
+                                        .setArrowRecordBatch(
+                                                ArrowRecordBatch.newBuilder()
+                                                        .setSerializedRecordBatch(
+                                                                ByteString.copyFrom(
+                                                                        outputStream.toByteArray()))
+                                                        .build())
+                                        .setArrowSchema(
+                                                ArrowSchema.newBuilder()
+                                                        .setSerializedSchema(
+                                                                ByteString.copyFromUtf8(
+                                                                        schemaString))
+                                                        .build())
+                                        .setRowCount(genRecords.size())
+                                        .setStats(
+                                                StreamStats.newBuilder()
+                                                        .setProgress(
+                                                                StreamStats.Progress.newBuilder()
+                                                                        .setAtResponseStart(
+                                                                                progressAtResponseStart)
+                                                                        .setAtResponseEnd(
+                                                                                progressAtResponseEnd)))
+                                        .build();
+                            } catch (Exception ex) {
+                                throw new RuntimeException(
+                                        "Problems generating faked response.", ex);
+                            }
+                        })
+                .collect(Collectors.toList());
     }
 
     public static BigQueryReadOptions createReadOptions(
@@ -594,6 +754,56 @@ public class StorageClientFaker {
                                                                             expectedRowCount,
                                                                             expectedReadStreamCount,
                                                                             avroSchemaString),
+                                                            dataGenerator,
+                                                            errorPercentage));
+                                        })
+                                .build())
+                .build();
+    }
+
+    public static BigQueryReadOptions createArrowReadOptions(
+            Integer expectedRowCount, Integer expectedReadStreamCount, String arrowSchemaString)
+            throws IOException {
+        return createArrowReadOptions(
+                expectedRowCount,
+                expectedReadStreamCount,
+                arrowSchemaString,
+                params -> StorageClientFaker.createRecordList(params));
+    }
+
+    public static BigQueryReadOptions createArrowReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String arrowSchemaString,
+            SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator)
+            throws IOException {
+        return createArrowReadOptions(
+                expectedRowCount, expectedReadStreamCount, arrowSchemaString, dataGenerator, 0D);
+    }
+
+    public static BigQueryReadOptions createArrowReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String arrowSchemaString,
+            SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
+            Double errorPercentage)
+            throws IOException {
+        return BigQueryReadOptions.builder()
+                .setBigQueryConnectOptions(
+                        BigQueryConnectOptions.builder()
+                                .setDataset("dataset")
+                                .setProjectId("project")
+                                .setTable("table")
+                                .setCredentialsOptions(null)
+                                .setTestingBigQueryServices(
+                                        () -> {
+                                            return new StorageClientFaker.FakeBigQueryServices(
+                                                    new StorageClientFaker.FakeBigQueryServices
+                                                            .FakeBigQueryStorageReadClient(
+                                                            StorageClientFaker.fakeArrowReadSession(
+                                                                    expectedRowCount,
+                                                                    expectedReadStreamCount,
+                                                                    arrowSchemaString),
                                                             dataGenerator,
                                                             errorPercentage));
                                         })
