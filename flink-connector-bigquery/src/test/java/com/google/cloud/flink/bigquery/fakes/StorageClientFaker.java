@@ -208,6 +208,46 @@ public class StorageClientFaker {
             public void cancel() {}
         }
 
+        /**
+         * Class implementing the {@link
+         * com.google.cloud.flink.bigquery.services.BigQueryServices.BigQueryServerStream} interface
+         * for generating an invalid (throws error) response.
+         */
+        public static class FakeBigQueryErrorServerStream
+                implements BigQueryServices.BigQueryServerStream<ReadRowsResponse> {
+
+            private final List<ReadRowsResponse> toReturn;
+            private final Double errorPercentage;
+
+            public FakeBigQueryErrorServerStream(
+                    SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
+                    String schema,
+                    String dataPrefix,
+                    Long size,
+                    Long offset,
+                    Double errorPercentage) {
+                this.toReturn =
+                        createInvalidResponse(
+                                schema,
+                                dataGenerator
+                                        .apply(new RecordGenerationParams(schema, size.intValue()))
+                                        .stream()
+                                        .skip(offset)
+                                        .collect(Collectors.toList()),
+                                0,
+                                size);
+                this.errorPercentage = errorPercentage;
+            }
+
+            @Override
+            public Iterator<ReadRowsResponse> iterator() {
+                return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
+            }
+
+            @Override
+            public void cancel() {}
+        }
+
         /** Implementation for the storage read client for testing purposes. */
         public static class FakeBigQueryStorageReadClient implements StorageReadClient {
 
@@ -243,6 +283,16 @@ public class StorageClientFaker {
                     // introduce some random delay
                     Thread.sleep(new Random().nextInt(500));
                 } catch (InterruptedException ex) {
+                }
+                // Case where we need an Invalid Response
+                if (session.getTable().contains("invalid_table")) {
+                    return new FakeBigQueryErrorServerStream(
+                            dataGenerator,
+                            session.getAvroSchema().getSchema(),
+                            request.getReadStream(),
+                            session.getEstimatedRowCount(),
+                            request.getOffset(),
+                            errorPercentage);
                 }
                 return new FakeBigQueryServerStream(
                         dataGenerator,
@@ -335,6 +385,32 @@ public class StorageClientFaker {
                 .build();
     }
 
+    /**
+     * Static Method to create readOptions that always throw an error in response. This is done via
+     * setting the table field as "invalid_table" in the schema. which when used to create the
+     * serverStream invoke invalidReadOptions() that in turn is responsible for throwing the error.
+     *
+     * @param expectedRowCount The number of expected rows
+     * @param expectedReadStreamCount The number of expected splits/streams
+     * @param avroSchemaString The string representing avroschema
+     * @return
+     */
+    public static ReadSession fakeInvalidReadSession(
+            Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString) {
+        // setup the response for read session request
+        List<ReadStream> readStreams =
+                IntStream.range(0, expectedReadStreamCount)
+                        .mapToObj(i -> ReadStream.newBuilder().setName("stream" + i).build())
+                        .collect(Collectors.toList());
+        return ReadSession.newBuilder()
+                .addAllStreams(readStreams)
+                .setEstimatedRowCount(expectedRowCount)
+                .setDataFormat(DataFormat.AVRO)
+                .setTable("invalid_table")
+                .setAvroSchema(AvroSchema.newBuilder().setSchema(avroSchemaString))
+                .build();
+    }
+
     public static List<GenericRecord> createRecordList(RecordGenerationParams params) {
         Schema schema = new Schema.Parser().parse(params.getAvroSchemaString());
         return IntStream.range(0, params.getRecordCount())
@@ -404,6 +480,24 @@ public class StorageClientFaker {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Method ts throw an error inplace of readOptions.
+     *
+     * @param schemaString the schema String
+     * @param genericRecords records
+     * @param progressAtResponseStart Start time for progress logging
+     * @param progressAtResponseEnd end time for progress logging
+     * @return
+     */
+    @SuppressWarnings("deprecation")
+    public static List<ReadRowsResponse> createInvalidResponse(
+            String schemaString,
+            List<GenericRecord> genericRecords,
+            double progressAtResponseStart,
+            double progressAtResponseEnd) {
+        throw new RuntimeException("Problems generating faked response.");
+    }
+
     public static BigQueryReadOptions createReadOptions(
             Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString)
             throws IOException {
@@ -447,6 +541,59 @@ public class StorageClientFaker {
                                                                     expectedRowCount,
                                                                     expectedReadStreamCount,
                                                                     avroSchemaString),
+                                                            dataGenerator,
+                                                            errorPercentage));
+                                        })
+                                .build())
+                .build();
+    }
+
+    public static BigQueryReadOptions createInvalidQueryReadOptions(
+            Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString)
+            throws IOException {
+        return createInvalidQueryReadOptions(
+                expectedRowCount,
+                expectedReadStreamCount,
+                avroSchemaString,
+                params -> StorageClientFaker.createRecordList(params));
+    }
+
+    public static BigQueryReadOptions createInvalidQueryReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String avroSchemaString,
+            SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator)
+            throws IOException {
+        return createInvalidQueryReadOptions(
+                expectedRowCount, expectedReadStreamCount, avroSchemaString, dataGenerator, 0D);
+    }
+
+    public static BigQueryReadOptions createInvalidQueryReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String avroSchemaString,
+            SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
+            Double errorPercentage)
+            throws IOException {
+        return BigQueryReadOptions.builder()
+                .setQuery("Select * from invalid_table;")
+                .setQueryExecutionProject("invalid_project")
+                .setBigQueryConnectOptions(
+                        BigQueryConnectOptions.builder()
+                                .setDataset("dataset")
+                                .setProjectId("invalid_project")
+                                .setTable("invalid_table")
+                                .setCredentialsOptions(null)
+                                .setTestingBigQueryServices(
+                                        () -> {
+                                            return new StorageClientFaker.FakeBigQueryServices(
+                                                    new StorageClientFaker.FakeBigQueryServices
+                                                            .FakeBigQueryStorageReadClient(
+                                                            StorageClientFaker
+                                                                    .fakeInvalidReadSession(
+                                                                            expectedRowCount,
+                                                                            expectedReadStreamCount,
+                                                                            avroSchemaString),
                                                             dataGenerator,
                                                             errorPercentage));
                                         })
