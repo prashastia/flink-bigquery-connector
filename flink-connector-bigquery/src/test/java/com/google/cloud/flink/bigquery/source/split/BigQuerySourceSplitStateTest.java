@@ -49,11 +49,20 @@ public class BigQuerySourceSplitStateTest {
         BigQuerySourceSplitState splitState2 = new BigQuerySourceSplitState(split2);
         assertThat(splitState1).isEqualTo(splitState2);
 
+        // Check equality as well as hashcode.
+        assertThat(splitState1.hashCode()).isEqualTo(splitState2.hashCode());
+        assertThat(splitState1.toString()).isEqualTo(splitState2.toString());
+
         BigQuerySourceSplit split3 = new BigQuerySourceSplit(streamName2, 11L);
         assertThat(split1).isNotEqualTo(split3);
 
         BigQuerySourceSplitState splitState3 = new BigQuerySourceSplitState(split3);
         assertThat(splitState1).isNotEqualTo(splitState3);
+
+        //Check default split constructor for offset.
+        BigQuerySourceSplit defaultSplit = new BigQuerySourceSplit("defaultSplit");
+        assertThat(defaultSplit.getOffset()).isEqualTo(0);
+        assertThat(defaultSplit).isNotEqualTo(split1);
     }
 
     @Test
