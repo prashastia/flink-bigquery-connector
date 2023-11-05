@@ -56,7 +56,8 @@ public class BigQuerySourceEnumerator
     }
 
     /**
-     * Equality Override to check if two {@link  BigQuerySourceEnumerator} objects are equal.
+     * Equality Override to check if two {@link BigQuerySourceEnumerator} objects are equal.
+     *
      * @param obj the object to compare with
      * @return boolean true if two objects (this) and (obj) are equal, false otherwise
      */
@@ -78,13 +79,16 @@ public class BigQuerySourceEnumerator
                 && Objects.equals(readersAwaitingSplit, other.readersAwaitingSplit);
     }
     /**
-     * hashCode Override for {@link  BigQuerySourceEnumerator} object.
+     * hashCode Override for {@link BigQuerySourceEnumerator} object.
+     *
      * @return hashcode of the current object
      */
     @Override
-    public int hashCode(){
-        return Objects.hash(this.boundedness, this.context,this.splitAssigner,this.readersAwaitingSplit);
+    public int hashCode() {
+        return Objects.hash(
+                this.boundedness, this.context, this.splitAssigner, this.readersAwaitingSplit);
     }
+
     @Override
     public void start() {
         splitAssigner.open();

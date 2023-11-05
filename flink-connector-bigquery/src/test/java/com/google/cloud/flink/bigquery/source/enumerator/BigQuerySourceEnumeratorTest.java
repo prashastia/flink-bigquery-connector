@@ -56,9 +56,7 @@ public class BigQuerySourceEnumeratorTest {
                         this.readOptions, BigQuerySourceEnumState.initialState());
     }
 
-    /**
-     * Test to check the equality of {@link  BigQuerySourceEnumerator} class.
-     */
+    /** Test to check the equality of {@link BigQuerySourceEnumerator} class. */
     @Test
     public void testEquals() {
         BigQuerySourceEnumerator enumerator1 =
@@ -77,6 +75,7 @@ public class BigQuerySourceEnumeratorTest {
 
     /**
      * Test to check invalid/unregistered reader sends a split request.
+     *
      * @throws Exception when snapshot state fails.
      */
     @Test
@@ -94,11 +93,11 @@ public class BigQuerySourceEnumeratorTest {
     }
 
     /**
-     * test to check handling of split request and assignment.
-     * Check if NoMoreSplits single is issued when splits have been exhausted.
+     * test to check handling of split request and assignment. Check if NoMoreSplits single is
+     * issued when splits have been exhausted.
+     *
      * @throws Exception when snapshot state fails.
      */
-
     @Test
     public void testHandleSplitRequest() throws Exception {
         BigQuerySourceEnumerator testEnumerator =
