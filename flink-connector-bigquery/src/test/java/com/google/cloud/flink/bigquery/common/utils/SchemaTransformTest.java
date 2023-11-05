@@ -362,9 +362,7 @@ public class SchemaTransformTest {
         IllegalArgumentException typeException =
                 assertThrows(
                         IllegalArgumentException.class,
-                        () ->
-                                SchemaTransform.toGenericAvroSchema(
-                                        "testSchema", fieldsInvalidType));
+                        () -> SchemaTransform.toGenericAvroSchema("testSchema", fieldsInvalidType));
         // Make sure that the error is because of an invalid type.
         assertThat(typeException.getMessage()).contains("Unable to map BigQuery field type");
 
@@ -387,9 +385,7 @@ public class SchemaTransformTest {
         IllegalArgumentException modeException =
                 assertThrows(
                         IllegalArgumentException.class,
-                        () ->
-                                SchemaTransform.toGenericAvroSchema(
-                                        "testSchema", fieldsInvalidMode));
+                        () -> SchemaTransform.toGenericAvroSchema("testSchema", fieldsInvalidMode));
         // Make sure that the error is because of an invalid mode.
         assertThat(modeException.getMessage()).contains("Unknown BigQuery Field Mode");
     }

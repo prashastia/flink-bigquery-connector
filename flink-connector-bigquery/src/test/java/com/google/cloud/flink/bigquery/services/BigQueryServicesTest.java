@@ -28,28 +28,60 @@ import static com.google.common.truth.Truth.assertThat;
 
 /** */
 public class BigQueryServicesTest {
+
+    // Converted this to common parameter as used in both methods.
+    private final SerializableSupplier<BigQueryServices> dummyServices =
+            () ->
+                    new BigQueryServices() {
+                        @Override
+                        public BigQueryServices.QueryDataClient getQueryDataClient(
+                                CredentialsOptions credentialsOptions) {
+                            return null;
+                        }
+
+                        @Override
+                        public BigQueryServices.StorageReadClient getStorageClient(
+                                CredentialsOptions credentialsOptions) throws IOException {
+                            return null;
+                        }
+                    };
+
     @Test
     public void testFactoryWithTestServices() throws IOException {
-        SerializableSupplier<BigQueryServices> dummyServices =
-                () ->
-                        new BigQueryServices() {
-                            @Override
-                            public BigQueryServices.QueryDataClient getQueryDataClient(
-                                    CredentialsOptions credentialsOptions) {
-                                return null;
-                            }
 
-                            @Override
-                            public BigQueryServices.StorageReadClient getStorageClient(
-                                    CredentialsOptions credentialsOptions) throws IOException {
-                                return null;
-                            }
-                        };
         BigQueryServicesFactory original =
                 BigQueryServicesFactory.instance(
                         BigQueryConnectOptions.builderForQuerySource()
                                 .setTestingBigQueryServices(dummyServices)
                                 .build());
+
+        assertThat(original.getIsTestingEnabled()).isTrue();
+        assertThat(original.getTestingServices()).isNotNull();
+        assertThat(original.queryClient()).isNull();
+        assertThat(original.storageRead()).isNull();
+
+        original.defaultImplementation();
+
+        assertThat(original.getIsTestingEnabled()).isFalse();
+        assertThat(original.getTestingServices()).isNull();
+    }
+
+    /**
+     * Test to check if {@link BigQueryServicesFactory} works well with testing mode and without it
+     *
+     * @throws IOException when the client fails the storageRead.
+     */
+    @Test // Absolutely redundant test.
+    public void testWithTestingServices() throws IOException {
+        CredentialsOptions credOp = CredentialsOptions.builder().build();
+        BigQueryServicesFactory original =
+                BigQueryServicesFactory.instance(
+                        BigQueryConnectOptions.builderForQuerySource()
+                                .setCredentialsOptions(credOp)
+                                .build());
+
+        // checking withTestingServices().
+        original.withTestingServices(dummyServices.get());
 
         assertThat(original.getIsTestingEnabled()).isTrue();
         assertThat(original.getTestingServices()).isNotNull();
