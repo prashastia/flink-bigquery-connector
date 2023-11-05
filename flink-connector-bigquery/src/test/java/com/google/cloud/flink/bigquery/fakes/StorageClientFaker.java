@@ -119,11 +119,19 @@ public class StorageClientFaker {
 
                 @Override
                 public Optional<QueryResultInfo> runQuery(String projectId, String query) {
+                    if (projectId.equals("invalid_project")) {
+                        List<String> errors = Lists.newArrayList("Invalid Query", "");
+                        return Optional.of(QueryResultInfo.failed(errors));
+                    }
                     return Optional.of(QueryResultInfo.succeed("", "", ""));
                 }
 
                 @Override
                 public Job dryRunQuery(String projectId, String query) {
+                    if (projectId != null && projectId.equals("invalid_project")) {
+                        throw new RuntimeException(
+                                "Problems occurred while trying to dry-run a BigQuery query job.");
+                    }
                     return new Job()
                             .setStatistics(
                                     new JobStatistics()
