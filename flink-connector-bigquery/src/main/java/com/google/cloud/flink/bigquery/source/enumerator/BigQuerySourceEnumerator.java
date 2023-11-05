@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
 
-/** The enumerator class for {@link BigQuerySource}. */
+/** The enumerator class for {@link com.google.cloud.flink.bigquery.source.BigQuerySource}. */
 @Internal
 public class BigQuerySourceEnumerator
         implements SplitEnumerator<BigQuerySourceSplit, BigQuerySourceEnumState> {
