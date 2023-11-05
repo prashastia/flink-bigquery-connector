@@ -68,7 +68,8 @@ public class BigQuerySourceSplitAssignerTest {
         // should retrieve the second split representing the second stream
         maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isPresent();
-        BigQuerySourceSplit split = maybeSplit.get();
+        BigQuerySourceSplit split = null;
+        if (maybeSplit.isPresent()) split = maybeSplit.get();
         // no more splits should be available
         maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isEmpty();
@@ -106,7 +107,7 @@ public class BigQuerySourceSplitAssignerTest {
                         invalidQueryReadOptions, BigQuerySourceEnumState.initialState());
         // request the retrieval of the bigquery table info
         IllegalStateException failedQueryException =
-                assertThrows(IllegalStateException.class, () -> assigner.open());
+                assertThrows(IllegalStateException.class, assigner::open);
         assertThat(failedQueryException.getMessage())
                 .contains("The BigQuery query execution failed with errors");
     }
@@ -131,24 +132,20 @@ public class BigQuerySourceSplitAssignerTest {
                                         .setTable("table")
                                         .setCredentialsOptions(null)
                                         .setTestingBigQueryServices(
-                                                () -> {
-                                                    return new StorageClientFaker
-                                                            .FakeBigQueryServices(
-                                                            new StorageClientFaker
-                                                                    .FakeBigQueryServices
-                                                                    .FakeBigQueryStorageReadClient(
-                                                                    StorageClientFaker
-                                                                            .fakeReadSession(
-                                                                                    10,
-                                                                                    1,
-                                                                                    StorageClientFaker
-                                                                                            .SIMPLE_AVRO_SCHEMA_STRING),
-                                                                    params ->
-                                                                            StorageClientFaker
-                                                                                    .createRecordList(
-                                                                                            params),
-                                                                    0.0D));
-                                                })
+                                                () ->
+                                                        new StorageClientFaker.FakeBigQueryServices(
+                                                                new StorageClientFaker
+                                                                        .FakeBigQueryServices
+                                                                        .FakeBigQueryStorageReadClient(
+                                                                        StorageClientFaker
+                                                                                .fakeReadSession(
+                                                                                        10,
+                                                                                        1,
+                                                                                        StorageClientFaker
+                                                                                                .SIMPLE_AVRO_SCHEMA_STRING),
+                                                                        StorageClientFaker
+                                                                                ::createRecordList,
+                                                                        0.0D)))
                                         .build())
                         .build();
         // initialize the assigner with default options since we are faking the bigquery services
