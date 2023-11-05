@@ -49,8 +49,8 @@ public class BigQueryEnumStateTest {
                 Lists.newArrayList(new BigQuerySourceSplit("Stream1", 10L));
         Map<String, BigQuerySourceSplit> assignedSourceSplits1 = new HashMap<>();
 
-        List<String> remaniningTableStreams2 = new ArrayList<String>(remaniningTableStreams1);
-        List<String> completedTableStreams2 = new ArrayList<String>(completedTableStreams1);
+        List<String> remaniningTableStreams2 = new ArrayList<>(remaniningTableStreams1);
+        List<String> completedTableStreams2 = new ArrayList<>(completedTableStreams1);
         List<BigQuerySourceSplit> remainingSourceSplits2 =
                 Lists.newArrayList(new BigQuerySourceSplit("Stream1", 10L));
         Map<String, BigQuerySourceSplit> assignedSourceSplits2 = new HashMap<>();
@@ -74,7 +74,7 @@ public class BigQueryEnumStateTest {
         assertThat(state1.hashCode()).isEqualTo(state2.hashCode());
         assertThat(state1.toString()).isEqualTo(state2.toString());
 
-        List<String> completedTableStreams3 = new ArrayList<String>(completedTableStreams2);
+        List<String> completedTableStreams3 = new ArrayList<>(completedTableStreams2);
         completedTableStreams3.remove(0);
         BigQuerySourceEnumState state3 =
                 new BigQuerySourceEnumState(
