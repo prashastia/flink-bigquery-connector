@@ -20,11 +20,15 @@ import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.model.Dataset;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfigurationQuery;
+import com.google.api.services.bigquery.model.Table;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import static com.google.common.truth.Truth.assertThat;
 
 /** */
 public class BigQueryUtilsTest {
@@ -84,6 +88,74 @@ public class BigQueryUtilsTest {
 
         BigQueryUtils.maxRetryCount = 100;
         BigQueryUtils.datasetInfo(client, "", "");
+        // check no retries either
+        Mockito.verify(got, Mockito.times(1)).execute();
+    }
+
+    /**
+     * Test to check if retries are followed by a backoff time. Backoff increases exponentially
+     * (factor of 2) and this method tests if the same is being followed.
+     *
+     * @throws IOException when queryDryRun fails
+     * @throws InterruptedException when queryDryRun fails
+     */
+    @Test
+    public void testBackoffDelayRetry() throws IOException, InterruptedException {
+
+        Bigquery client = Mockito.mock(Bigquery.class);
+        Bigquery.Jobs jobs = Mockito.mock(Bigquery.Jobs.class);
+        Bigquery.Jobs.Insert insert = Mockito.mock(Bigquery.Jobs.Insert.class);
+
+        Mockito.when(client.jobs()).thenReturn(jobs);
+        Mockito.when(jobs.insert(ArgumentMatchers.any(), ArgumentMatchers.any()))
+                .thenReturn(insert);
+        Mockito.when(insert.setPrettyPrint(false)).thenReturn(insert);
+        Mockito.when(insert.execute()).thenThrow(new IOException("Expected"));
+
+        double expectedDelay = BigQueryUtils.BACKOFF_DELAY_IN_SECONDS;
+        double timeTry = 0L;
+        for (int i = 3; i <= 4; i++) {
+
+            double lastTimeTry = timeTry;
+            long startTime = System.nanoTime();
+            try {
+                BigQueryUtils.maxRetryCount = i;
+                BigQueryUtils.dryRunQuery(client, "", null, "");
+            } catch (Exception ex) {
+                timeTry =
+                        Math.ceil(
+                                TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime))
+                                        / 1000.00);
+            }
+            assertThat(timeTry - lastTimeTry).isAtLeast(expectedDelay);
+            expectedDelay *= 2;
+        }
+    }
+
+    /**
+     * Test for table info query.
+     *
+     * @throws IOException when tableInfo fails
+     * @throws InterruptedException when tableInfo fails
+     */
+    @Test
+    public void testNoRetriesTable() throws IOException, InterruptedException {
+        Bigquery client = Mockito.mock(Bigquery.class);
+
+        Bigquery.Tables tables = Mockito.mock(Bigquery.Tables.class);
+        Bigquery.Tables.Get got = Mockito.mock(Bigquery.Tables.Get.class);
+        Mockito.when(client.tables()).thenReturn(tables);
+        Mockito.when(
+                        tables.get(
+                                ArgumentMatchers.any(),
+                                ArgumentMatchers.any(),
+                                ArgumentMatchers.any()))
+                .thenReturn(got);
+        Mockito.when(got.setPrettyPrint(false)).thenReturn(got);
+        Mockito.when(got.execute()).thenReturn(new Table());
+
+        BigQueryUtils.maxRetryCount = 100;
+        BigQueryUtils.tableInfo(client, "", "", "");
         // check no retries either
         Mockito.verify(got, Mockito.times(1)).execute();
     }
