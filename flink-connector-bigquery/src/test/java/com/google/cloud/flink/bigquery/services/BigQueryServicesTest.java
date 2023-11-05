@@ -67,7 +67,7 @@ public class BigQueryServicesTest {
     }
 
     /**
-     * Test to check if {@link BigQueryServicesFactory} works well with testing mode and without it
+     * Test to check if {@link BigQueryServicesFactory} works well with testing mode and without it.
      *
      * @throws IOException when the client fails the storageRead.
      */

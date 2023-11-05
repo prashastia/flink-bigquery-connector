@@ -233,7 +233,7 @@ public class SchemaTransformTest {
 
     /**
      * Test to check if Namespace collision (when a record or a struct has the same name as that of
-     * a previous field. Check if the namespace if properly applied.
+     * a previous field) is properly applied.
      */
     @Test
     public void checkNameSpaceCollision() {
@@ -338,7 +338,7 @@ public class SchemaTransformTest {
     /**
      * Test for the case when Big Query releases a new dataype which is not mentioned in our map,
      * since it is explicitly declared, we do not recieve it from Big Query so can easily go out of
-     * date
+     * date.
      */
     @Test
     public void testConvertInvalidBigQuerySchemaToAvroSchema() {

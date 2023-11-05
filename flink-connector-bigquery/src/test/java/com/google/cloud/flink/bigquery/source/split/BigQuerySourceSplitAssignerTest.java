@@ -69,7 +69,9 @@ public class BigQuerySourceSplitAssignerTest {
         maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isPresent();
         BigQuerySourceSplit split = null;
-        if (maybeSplit.isPresent()) split = maybeSplit.get();
+        if (maybeSplit.isPresent()) {
+            split = maybeSplit.get();
+        }
         // no more splits should be available
         maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isEmpty();
@@ -92,7 +94,7 @@ public class BigQuerySourceSplitAssignerTest {
     }
 
     /**
-     * Test to check invalid query is handled by {@link BigQuerySourceSplitAssigner}
+     * Test to check invalid query is handled by {@link BigQuerySourceSplitAssigner}.
      *
      * @throws IOException when createInvalidQueryReadOptions() fails
      */

@@ -93,7 +93,7 @@ public class BigQuerySourceTest {
     /**
      * Test to check the create and restore enumerator methods.
      *
-     * @throws Exception: IOException when createReadOptions fails, Exception when create/restore
+     * @throws Exception IOException when createReadOptions fails, Exception when create/restore
      *     enumerator, snapshot state fails.
      */
     @Test

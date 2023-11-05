@@ -189,7 +189,7 @@ class BigQuerySourceITCase {
     /**
      * Test to check the Read count when ReadOptions have a query.
      *
-     * @throws Exception: IOException when readAvrosFromQuery() fails, Exception when
+     * @throws Exception IOException when readAvrosFromQuery() fails, Exception when
      *     executeAndCollect() fails
      */
     @Test
@@ -211,9 +211,9 @@ class BigQuerySourceITCase {
     }
 
     /**
-     * Test to check the Read count when ReadOptions have a query and a Source limit is set.Big
+     * Test to check the Read count when ReadOptions have a query and a Source limit is set.
      *
-     * @throws Exception: IOException when readAvrosFromQuery() fails, Exception when
+     * @throws Exception IOException when readAvrosFromQuery() fails, Exception when
      *     executeAndCollect() fails
      */
     @Test

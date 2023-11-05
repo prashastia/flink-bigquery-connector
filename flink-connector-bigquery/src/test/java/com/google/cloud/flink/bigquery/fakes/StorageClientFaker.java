@@ -210,7 +210,8 @@ public class StorageClientFaker {
                 this.errorPercentage = errorPercentage;
             }
 
-            @Override@NotNull
+            @Override
+            @NotNull
             public Iterator<ReadRowsResponse> iterator() {
                 return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
             }
@@ -250,7 +251,8 @@ public class StorageClientFaker {
                 this.errorPercentage = errorPercentage;
             }
 
-            @Override @NotNull
+            @Override
+            @NotNull
             public Iterator<ReadRowsResponse> iterator() {
                 return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
             }
@@ -261,9 +263,9 @@ public class StorageClientFaker {
 
         /**
          * Class implementing the {@link
-         * com.google.cloud.flink.bigquery.services.BigQueryServices.BigQueryServerStream} interface
-         * for generating a response that does not have AvroRows or AvroSchema (done via adding
-         * ARROW Schema)
+         * com.google.cloud.flink.bigquery.services.BigQueryServices.BigQueryServerStream}
+         * interface. for generating a response that does not have AvroRows or AvroSchema (done via
+         * adding ARROW Schema)
          */
         public static class FakeBigQueryArrowServerStream
                 implements BigQueryServices.BigQueryServerStream<ReadRowsResponse> {
@@ -291,7 +293,8 @@ public class StorageClientFaker {
                 this.errorPercentage = errorPercentage;
             }
 
-            @Override @NotNull
+            @Override
+            @NotNull
             public Iterator<ReadRowsResponse> iterator() {
                 return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
             }
@@ -702,15 +705,16 @@ public class StorageClientFaker {
                                 .setTable("table")
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
-                                        () -> new FakeBigQueryServices(
-                                                new FakeBigQueryServices
-                                                        .FakeBigQueryStorageReadClient(
-                                                        StorageClientFaker.fakeReadSession(
-                                                                expectedRowCount,
-                                                                expectedReadStreamCount,
-                                                                avroSchemaString),
-                                                        dataGenerator,
-                                                        errorPercentage)))
+                                        () ->
+                                                new FakeBigQueryServices(
+                                                        new FakeBigQueryServices
+                                                                .FakeBigQueryStorageReadClient(
+                                                                StorageClientFaker.fakeReadSession(
+                                                                        expectedRowCount,
+                                                                        expectedReadStreamCount,
+                                                                        avroSchemaString),
+                                                                dataGenerator,
+                                                                errorPercentage)))
                                 .build())
                 .build();
     }
@@ -752,16 +756,17 @@ public class StorageClientFaker {
                                 .setTable("invalid_table")
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
-                                        () -> new FakeBigQueryServices(
-                                                new FakeBigQueryServices
-                                                        .FakeBigQueryStorageReadClient(
-                                                        StorageClientFaker
-                                                                .fakeInvalidReadSession(
-                                                                        expectedRowCount,
-                                                                        expectedReadStreamCount,
-                                                                        avroSchemaString),
-                                                        dataGenerator,
-                                                        errorPercentage)))
+                                        () ->
+                                                new FakeBigQueryServices(
+                                                        new FakeBigQueryServices
+                                                                .FakeBigQueryStorageReadClient(
+                                                                StorageClientFaker
+                                                                        .fakeInvalidReadSession(
+                                                                                expectedRowCount,
+                                                                                expectedReadStreamCount,
+                                                                                avroSchemaString),
+                                                                dataGenerator,
+                                                                errorPercentage)))
                                 .build())
                 .build();
     }
@@ -801,15 +806,17 @@ public class StorageClientFaker {
                                 .setTable("table")
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
-                                        () -> new FakeBigQueryServices(
-                                                new FakeBigQueryServices
-                                                        .FakeBigQueryStorageReadClient(
-                                                        StorageClientFaker.fakeArrowReadSession(
-                                                                expectedRowCount,
-                                                                expectedReadStreamCount,
-                                                                arrowSchemaString),
-                                                        dataGenerator,
-                                                        errorPercentage)))
+                                        () ->
+                                                new FakeBigQueryServices(
+                                                        new FakeBigQueryServices
+                                                                .FakeBigQueryStorageReadClient(
+                                                                StorageClientFaker
+                                                                        .fakeArrowReadSession(
+                                                                                expectedRowCount,
+                                                                                expectedReadStreamCount,
+                                                                                arrowSchemaString),
+                                                                dataGenerator,
+                                                                errorPercentage)))
                                 .build())
                 .build();
     }

@@ -86,6 +86,7 @@ public class BigQuerySourceSplitAssigner {
                 this.assignedSourceSplits,
                 this.initialized);
     }
+
     /**
      * Method to check if two ArrayDeque are equal.
      *

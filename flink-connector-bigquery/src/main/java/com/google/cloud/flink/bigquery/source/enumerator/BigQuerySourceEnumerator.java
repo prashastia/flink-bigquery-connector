@@ -78,6 +78,7 @@ public class BigQuerySourceEnumerator
                 && Objects.equals(this.splitAssigner, other.splitAssigner)
                 && Objects.equals(readersAwaitingSplit, other.readersAwaitingSplit);
     }
+
     /**
      * hashCode Override for {@link BigQuerySourceEnumerator} object.
      *
