@@ -46,10 +46,25 @@ public class QueryResultInfoTest {
         assertThat(qri.getErrorMessages().get()).isEmpty();
     }
 
+    /** Test to check the Inequality of {@link QueryResultInfo} class. */
     @Test
     public void testNotEquals() {
         QueryResultInfo succeed = QueryResultInfo.succeed("", "", "");
         QueryResultInfo failed = QueryResultInfo.failed(Lists.newArrayList());
         assertThat(succeed).isNotEqualTo(failed);
+
+        QueryResultInfo succeed2 = QueryResultInfo.succeed("", "differentDataset", "");
+        assertThat(succeed).isNotEqualTo(succeed2);
+    }
+
+    /** Test to check the Equality of {@link QueryResultInfo} class. */
+    @Test
+    public void testEquals() {
+        QueryResultInfo succeed1 = QueryResultInfo.succeed("project1", "dataset1", "table1");
+        QueryResultInfo succeed2 = QueryResultInfo.succeed("project1", "dataset1", "table1");
+
+        assertThat(succeed1).isEqualTo(succeed2);
+        assertThat(succeed1.hashCode()).isEqualTo(succeed2.hashCode());
+        assertThat(succeed1.toString()).isEqualTo(succeed2.toString());
     }
 }
