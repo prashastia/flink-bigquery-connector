@@ -53,6 +53,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.util.RandomData;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -209,7 +210,7 @@ public class StorageClientFaker {
                 this.errorPercentage = errorPercentage;
             }
 
-            @Override
+            @Override@NotNull
             public Iterator<ReadRowsResponse> iterator() {
                 return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
             }
@@ -249,7 +250,7 @@ public class StorageClientFaker {
                 this.errorPercentage = errorPercentage;
             }
 
-            @Override
+            @Override @NotNull
             public Iterator<ReadRowsResponse> iterator() {
                 return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
             }
@@ -290,7 +291,7 @@ public class StorageClientFaker {
                 this.errorPercentage = errorPercentage;
             }
 
-            @Override
+            @Override @NotNull
             public Iterator<ReadRowsResponse> iterator() {
                 return new FaultyIterator<>(toReturn.iterator(), errorPercentage);
             }
@@ -443,7 +444,7 @@ public class StorageClientFaker {
 
     public static ReadSession fakeReadSession(
             Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString) {
-        // setup the response for read session request
+        // set up the response for read session request
         List<ReadStream> readStreams =
                 IntStream.range(0, expectedReadStreamCount)
                         .mapToObj(i -> ReadStream.newBuilder().setName("stream" + i).build())
@@ -463,12 +464,12 @@ public class StorageClientFaker {
      *
      * @param expectedRowCount The number of expected rows
      * @param expectedReadStreamCount The number of expected splits/streams
-     * @param avroSchemaString The string representing avroschema
+     * @param avroSchemaString The string representing avro schema
      * @return a read Session with table as "invalid_table"
      */
     public static ReadSession fakeInvalidReadSession(
             Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString) {
-        // setup the response for read session request
+        // set up the response for read session request
         List<ReadStream> readStreams =
                 IntStream.range(0, expectedReadStreamCount)
                         .mapToObj(i -> ReadStream.newBuilder().setName("stream" + i).build())
@@ -494,7 +495,7 @@ public class StorageClientFaker {
      */
     public static ReadSession fakeArrowReadSession(
             Integer expectedRowCount, Integer expectedReadStreamCount, String arrowSchemaString) {
-        // setup the response for read session request
+        // set up the response for read session request
         List<ReadStream> readStreams =
                 IntStream.range(0, expectedReadStreamCount)
                         .mapToObj(i -> ReadStream.newBuilder().setName("stream" + i).build())
@@ -583,7 +584,7 @@ public class StorageClientFaker {
     /**
      * Method to create a {@link ReadRowsResponse} that throws an error inplace of valid rows.
      *
-     * @param schemaString the schema String
+     * @param schemaString the Schema String
      * @param genericRecords records
      * @param progressAtResponseStart Start time for progress logging
      * @param progressAtResponseEnd end time for progress logging
@@ -602,10 +603,10 @@ public class StorageClientFaker {
      * Method to create a {@link ReadRowsResponse} that do not contain Avro Schema, contain Arrow
      * schema instead.
      *
-     * @param schemaString
-     * @param genericRecords
-     * @param progressAtResponseStart
-     * @param progressAtResponseEnd
+     * @param schemaString the Schema String
+     * @param genericRecords records
+     * @param progressAtResponseStart Start time for progress logging
+     * @param progressAtResponseEnd end time for progress logging
      * @return List of rows without Avro Schema.
      */
     @SuppressWarnings("deprecation")
@@ -673,7 +674,7 @@ public class StorageClientFaker {
                 expectedRowCount,
                 expectedReadStreamCount,
                 avroSchemaString,
-                params -> StorageClientFaker.createRecordList(params));
+                StorageClientFaker::createRecordList);
     }
 
     public static BigQueryReadOptions createReadOptions(
@@ -701,17 +702,15 @@ public class StorageClientFaker {
                                 .setTable("table")
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
-                                        () -> {
-                                            return new StorageClientFaker.FakeBigQueryServices(
-                                                    new StorageClientFaker.FakeBigQueryServices
-                                                            .FakeBigQueryStorageReadClient(
-                                                            StorageClientFaker.fakeReadSession(
-                                                                    expectedRowCount,
-                                                                    expectedReadStreamCount,
-                                                                    avroSchemaString),
-                                                            dataGenerator,
-                                                            errorPercentage));
-                                        })
+                                        () -> new FakeBigQueryServices(
+                                                new FakeBigQueryServices
+                                                        .FakeBigQueryStorageReadClient(
+                                                        StorageClientFaker.fakeReadSession(
+                                                                expectedRowCount,
+                                                                expectedReadStreamCount,
+                                                                avroSchemaString),
+                                                        dataGenerator,
+                                                        errorPercentage)))
                                 .build())
                 .build();
     }
@@ -723,7 +722,7 @@ public class StorageClientFaker {
                 expectedRowCount,
                 expectedReadStreamCount,
                 avroSchemaString,
-                params -> StorageClientFaker.createRecordList(params));
+                StorageClientFaker::createRecordList);
     }
 
     public static BigQueryReadOptions createInvalidQueryReadOptions(
@@ -753,18 +752,16 @@ public class StorageClientFaker {
                                 .setTable("invalid_table")
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
-                                        () -> {
-                                            return new StorageClientFaker.FakeBigQueryServices(
-                                                    new StorageClientFaker.FakeBigQueryServices
-                                                            .FakeBigQueryStorageReadClient(
-                                                            StorageClientFaker
-                                                                    .fakeInvalidReadSession(
-                                                                            expectedRowCount,
-                                                                            expectedReadStreamCount,
-                                                                            avroSchemaString),
-                                                            dataGenerator,
-                                                            errorPercentage));
-                                        })
+                                        () -> new FakeBigQueryServices(
+                                                new FakeBigQueryServices
+                                                        .FakeBigQueryStorageReadClient(
+                                                        StorageClientFaker
+                                                                .fakeInvalidReadSession(
+                                                                        expectedRowCount,
+                                                                        expectedReadStreamCount,
+                                                                        avroSchemaString),
+                                                        dataGenerator,
+                                                        errorPercentage)))
                                 .build())
                 .build();
     }
@@ -776,7 +773,7 @@ public class StorageClientFaker {
                 expectedRowCount,
                 expectedReadStreamCount,
                 arrowSchemaString,
-                params -> StorageClientFaker.createRecordList(params));
+                StorageClientFaker::createRecordList);
     }
 
     public static BigQueryReadOptions createArrowReadOptions(
@@ -804,17 +801,15 @@ public class StorageClientFaker {
                                 .setTable("table")
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
-                                        () -> {
-                                            return new StorageClientFaker.FakeBigQueryServices(
-                                                    new StorageClientFaker.FakeBigQueryServices
-                                                            .FakeBigQueryStorageReadClient(
-                                                            StorageClientFaker.fakeArrowReadSession(
-                                                                    expectedRowCount,
-                                                                    expectedReadStreamCount,
-                                                                    arrowSchemaString),
-                                                            dataGenerator,
-                                                            errorPercentage));
-                                        })
+                                        () -> new FakeBigQueryServices(
+                                                new FakeBigQueryServices
+                                                        .FakeBigQueryStorageReadClient(
+                                                        StorageClientFaker.fakeArrowReadSession(
+                                                                expectedRowCount,
+                                                                expectedReadStreamCount,
+                                                                arrowSchemaString),
+                                                        dataGenerator,
+                                                        errorPercentage)))
                                 .build())
                 .build();
     }
