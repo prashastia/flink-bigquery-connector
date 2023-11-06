@@ -53,7 +53,7 @@ public class BigQuerySourceSplitAssignerTest {
         // request the retrieval of the bigquery table info
         assigner.open();
 
-        // should retrieve the first split representing the firt stream
+        // should retrieve the first split representing the first stream
         Optional<BigQuerySourceSplit> maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isPresent();
         // At this point of time
@@ -76,7 +76,7 @@ public class BigQuerySourceSplitAssignerTest {
         maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isEmpty();
         assertThat(assigner.noMoreSplits()).isTrue();
-        // lets check on the enum state
+        // lets us check on the enum state
         BigQuerySourceEnumState state = assigner.snapshotState(0);
         assertThat(state.getRemaniningTableStreams()).isEmpty();
         assertThat(state.getRemainingSourceSplits()).isEmpty();
@@ -122,7 +122,7 @@ public class BigQuerySourceSplitAssignerTest {
      */
     @Test
     public void testQueryRead() throws IOException {
-        // Creating read options with a query to check if a succesfull query runs properly
+        // Creating read options with a query to check if a successful query runs properly
         BigQueryReadOptions queryReadOptions =
                 BigQueryReadOptions.builder()
                         .setQueryAndExecutionProject("Select * from table", "project")

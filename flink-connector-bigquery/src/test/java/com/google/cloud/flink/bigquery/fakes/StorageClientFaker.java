@@ -120,19 +120,11 @@ public class StorageClientFaker {
 
                 @Override
                 public Optional<QueryResultInfo> runQuery(String projectId, String query) {
-                    if (projectId.equals("invalid_project")) {
-                        List<String> errors = Lists.newArrayList("Invalid Query", "");
-                        return Optional.of(QueryResultInfo.failed(errors));
-                    }
                     return Optional.of(QueryResultInfo.succeed("", "", ""));
                 }
 
                 @Override
                 public Job dryRunQuery(String projectId, String query) {
-                    if (projectId != null && projectId.equals("invalid_project")) {
-                        throw new RuntimeException(
-                                "Problems occurred while trying to dry-run a BigQuery query job.");
-                    }
                     return new Job()
                             .setStatistics(
                                     new JobStatistics()
@@ -220,6 +212,168 @@ public class StorageClientFaker {
             public void cancel() {}
         }
 
+        /** Implementation for the storage read client for testing purposes. */
+        public static class FakeBigQueryStorageReadClient implements StorageReadClient {
+
+            private final ReadSession session;
+            private final SerializableFunction<RecordGenerationParams, List<GenericRecord>>
+                    dataGenerator;
+            private final Double errorPercentage;
+
+            public FakeBigQueryStorageReadClient(
+                    ReadSession session,
+                    SerializableFunction<RecordGenerationParams, List<GenericRecord>>
+                            dataGenerator) {
+                this(session, dataGenerator, 0D);
+            }
+
+            public FakeBigQueryStorageReadClient(
+                    ReadSession session,
+                    SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
+                    Double errorPercentage) {
+                this.session = session;
+                this.dataGenerator = dataGenerator;
+                this.errorPercentage = errorPercentage;
+            }
+
+            @Override
+            public ReadSession createReadSession(CreateReadSessionRequest request) {
+                return session;
+            }
+
+            /**
+             * Creates Server Stream corresponding to the Request- FakeBigQueryServerStream.
+             *
+             * @param request The request for the storage API
+             * @return Requested ServerStream
+             */
+            @Override
+            public BigQueryServerStream<ReadRowsResponse> readRows(ReadRowsRequest request) {
+                try {
+                    // introduce some random delay
+                    Thread.sleep(new Random().nextInt(500));
+                } catch (InterruptedException ex) {
+                }
+                // Generate an Valid response
+                return new FakeBigQueryServerStream(
+                        dataGenerator,
+                        session.getAvroSchema().getSchema(),
+                        request.getReadStream(),
+                        session.getEstimatedRowCount(),
+                        request.getOffset(),
+                        errorPercentage);
+            }
+
+            @Override
+            public void close() {}
+        }
+    }
+
+    /**
+     * Implementation of {@link BigQueryServices} interface. This creates Invalid Responses and Non
+     * Avro Schemas. dryRunQuery() and runQuery() always throws error. Server Stream provides with
+     * invalid server streams.
+     */
+    public static class FakeBigQueryErrorServices implements BigQueryServices {
+
+        private final FakeBigQueryErrorStorageReadClient storageReadClient;
+
+        public FakeBigQueryErrorServices(FakeBigQueryErrorStorageReadClient storageReadClient) {
+            this.storageReadClient = storageReadClient;
+        }
+
+        @Override
+        public StorageReadClient getStorageClient(CredentialsOptions readOptions)
+                throws IOException {
+            return storageReadClient;
+            //            throw new IOException("Error Retrieving the Storage Read Client");
+        }
+
+        @Override
+        public QueryDataClient getQueryDataClient(CredentialsOptions readOptions) {
+            return new QueryDataClient() {
+
+                @Override
+                public List<String> retrieveTablePartitions(
+                        String project, String dataset, String table) {
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMddHH");
+
+                    return Lists.newArrayList(
+                            Instant.now().atOffset(ZoneOffset.UTC).minusHours(5).format(dtf),
+                            Instant.now().atOffset(ZoneOffset.UTC).minusHours(4).format(dtf),
+                            Instant.now().atOffset(ZoneOffset.UTC).minusHours(3).format(dtf),
+                            Instant.now().atOffset(ZoneOffset.UTC).format(dtf));
+                }
+
+                @Override
+                public Optional<TablePartitionInfo> retrievePartitionColumnInfo(
+                        String project, String dataset, String table) {
+                    return Optional.of(
+                            new TablePartitionInfo(
+                                    "ts",
+                                    BigQueryPartition.PartitionType.HOUR,
+                                    StandardSQLTypeName.TIMESTAMP));
+                }
+
+                @Override
+                public TableSchema getTableSchema(String project, String dataset, String table) {
+                    return SIMPLE_BQ_TABLE_SCHEMA;
+                }
+
+                @Override
+                public Optional<QueryResultInfo> runQuery(String projectId, String query) {
+                    List<String> errors = Lists.newArrayList("Invalid Query", "");
+                    return Optional.of(QueryResultInfo.failed(errors));
+                }
+
+                @Override
+                public Job dryRunQuery(String projectId, String query) {
+                    throw new RuntimeException(
+                            "Problems occurred while trying to dry-run a BigQuery query job.");
+                }
+            };
+        }
+
+        static class FaultyIterator<T> implements Iterator<T> {
+
+            private final Iterator<T> realIterator;
+            private final Double errorPercentage;
+            private final Random random = new Random();
+
+            public FaultyIterator(Iterator<T> realIterator, Double errorPercentage) {
+                this.realIterator = realIterator;
+                Preconditions.checkState(
+                        0 <= errorPercentage && errorPercentage <= 100,
+                        "The error percentage should be between 0 and 100");
+                this.errorPercentage = errorPercentage;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return realIterator.hasNext();
+            }
+
+            @Override
+            public T next() {
+                if (random.nextDouble() * 100 < errorPercentage) {
+                    throw new RuntimeException(
+                            "Faulty iterator has failed, it will happen with a chance of: "
+                                    + errorPercentage);
+                }
+                return realIterator.next();
+            }
+
+            @Override
+            public void remove() {
+                realIterator.remove();
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super T> action) {
+                realIterator.forEachRemaining(action);
+            }
+        }
+
         /**
          * Class implementing the {@link
          * com.google.cloud.flink.bigquery.services.BigQueryServices.BigQueryServerStream} interface
@@ -304,21 +458,21 @@ public class StorageClientFaker {
         }
 
         /** Implementation for the storage read client for testing purposes. */
-        public static class FakeBigQueryStorageReadClient implements StorageReadClient {
+        public static class FakeBigQueryErrorStorageReadClient implements StorageReadClient {
 
             private final ReadSession session;
             private final SerializableFunction<RecordGenerationParams, List<GenericRecord>>
                     dataGenerator;
             private final Double errorPercentage;
 
-            public FakeBigQueryStorageReadClient(
+            public FakeBigQueryErrorStorageReadClient(
                     ReadSession session,
                     SerializableFunction<RecordGenerationParams, List<GenericRecord>>
                             dataGenerator) {
                 this(session, dataGenerator, 0D);
             }
 
-            public FakeBigQueryStorageReadClient(
+            public FakeBigQueryErrorStorageReadClient(
                     ReadSession session,
                     SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
                     Double errorPercentage) {
@@ -349,16 +503,6 @@ public class StorageClientFaker {
                     Thread.sleep(new Random().nextInt(500));
                 } catch (InterruptedException ex) {
                 }
-                // Case where we need an Invalid Response
-                if (session.getTable().contains("invalid_table")) {
-                    return new FakeBigQueryErrorServerStream(
-                            dataGenerator,
-                            session.getAvroSchema().getSchema(),
-                            request.getReadStream(),
-                            session.getEstimatedRowCount(),
-                            request.getOffset(),
-                            errorPercentage);
-                }
                 // Case where we create an ARROW Schema
                 if (session.hasArrowSchema()) {
                     return new FakeBigQueryArrowServerStream(
@@ -369,7 +513,8 @@ public class StorageClientFaker {
                             request.getOffset(),
                             errorPercentage);
                 }
-                return new FakeBigQueryServerStream(
+                // Case where we need an Invalid Response
+                return new FakeBigQueryErrorServerStream(
                         dataGenerator,
                         session.getAvroSchema().getSchema(),
                         request.getReadStream(),
@@ -462,13 +607,12 @@ public class StorageClientFaker {
 
     /**
      * Static Method to create readSession that always throw an error in response. This is done by
-     * setting the table field as "invalid_table" in the schema. Which when used to create the
-     * serverStream invoke invalidReadOptions() that in turn is responsible for throwing the error.
+     * invoking invalidReadOptions() that in turn is responsible for throwing the error.
      *
      * @param expectedRowCount The number of expected rows
      * @param expectedReadStreamCount The number of expected splits/streams
      * @param avroSchemaString The string representing avro schema
-     * @return a read Session with table as "invalid_table"
+     * @return a Read Session
      */
     public static ReadSession fakeInvalidReadSession(
             Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString) {
@@ -481,7 +625,6 @@ public class StorageClientFaker {
                 .addAllStreams(readStreams)
                 .setEstimatedRowCount(expectedRowCount)
                 .setDataFormat(DataFormat.AVRO)
-                .setTable("invalid_table")
                 .setAvroSchema(AvroSchema.newBuilder().setSchema(avroSchemaString))
                 .build();
     }
@@ -757,9 +900,9 @@ public class StorageClientFaker {
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
                                         () ->
-                                                new FakeBigQueryServices(
-                                                        new FakeBigQueryServices
-                                                                .FakeBigQueryStorageReadClient(
+                                                new FakeBigQueryErrorServices(
+                                                        new FakeBigQueryErrorServices
+                                                                .FakeBigQueryErrorStorageReadClient(
                                                                 StorageClientFaker
                                                                         .fakeInvalidReadSession(
                                                                                 expectedRowCount,
@@ -807,9 +950,9 @@ public class StorageClientFaker {
                                 .setCredentialsOptions(null)
                                 .setTestingBigQueryServices(
                                         () ->
-                                                new FakeBigQueryServices(
-                                                        new FakeBigQueryServices
-                                                                .FakeBigQueryStorageReadClient(
+                                                new FakeBigQueryErrorServices(
+                                                        new FakeBigQueryErrorServices
+                                                                .FakeBigQueryErrorStorageReadClient(
                                                                 StorageClientFaker
                                                                         .fakeArrowReadSession(
                                                                                 expectedRowCount,
