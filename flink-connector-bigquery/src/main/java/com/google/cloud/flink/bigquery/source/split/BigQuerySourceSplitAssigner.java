@@ -37,8 +37,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -66,6 +68,76 @@ public class BigQuerySourceSplitAssigner {
         this.remainingSourceSplits = new ArrayDeque<>(sourceEnumState.getRemainingSourceSplits());
         this.assignedSourceSplits = sourceEnumState.getAssignedSourceSplits();
         this.initialized = sourceEnumState.isInitialized();
+    }
+
+    /**
+     * Override of hashcode method for {@link BigQuerySourceSplitAssigner} class.
+     *
+     * @return hashCode of the current object
+     */
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(
+                this.readOptions,
+                this.remainingTableStreams,
+                this.alreadyProcessedTableStreams,
+                this.remainingSourceSplits,
+                this.assignedSourceSplits,
+                this.initialized);
+    }
+
+    /**
+     * Method to check if two ArrayDeque are equal.
+     *
+     * @param arrayDeque1 First ArrayDeque
+     * @param arraydeque2 Second ArrayDeque
+     * @return True if arrayDeque1 and arraydeque2 have the exact same elements.
+     * @param <T> Representing any datatype
+     */
+    private static <T> boolean checkArrayDequeEquals(
+            ArrayDeque<T> arrayDeque1, ArrayDeque<T> arraydeque2) {
+
+        if (arrayDeque1.size() != arraydeque2.size()) {
+            return false;
+        }
+        final Iterator<T> iterator1 = arrayDeque1.iterator();
+        final Iterator<T> iterator2 = arraydeque2.iterator();
+        while (iterator1.hasNext()) {
+            if (iterator1.next() != iterator2.next()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Overrides the equals method to check if current {@link BigQuerySourceSplitAssigner} object is
+     * equal to Object obj.
+     *
+     * @param obj To check equality with
+     * @return true if obj and current object are equal, false otherwise
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BigQuerySourceSplitAssigner other = (BigQuerySourceSplitAssigner) obj;
+
+        // Checking the leftover parameters
+        return Objects.equals(this.initialized, other.initialized)
+                && Objects.equals(this.readOptions, other.readOptions)
+                && checkArrayDequeEquals(this.remainingSourceSplits, other.remainingSourceSplits)
+                && checkArrayDequeEquals(this.remainingTableStreams, other.remainingTableStreams)
+                && this.alreadyProcessedTableStreams.equals(other.alreadyProcessedTableStreams)
+                && this.assignedSourceSplits.equals(other.assignedSourceSplits);
     }
 
     /**

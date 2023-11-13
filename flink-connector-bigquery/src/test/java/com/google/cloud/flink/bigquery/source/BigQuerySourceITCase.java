@@ -36,6 +36,7 @@ import org.apache.flink.util.CollectionUtil;
 import com.google.cloud.flink.bigquery.fakes.StorageClientFaker;
 import com.google.cloud.flink.bigquery.source.config.BigQueryReadOptions;
 import com.google.cloud.flink.bigquery.source.reader.deserializer.AvroToRowDataDeserializationSchema;
+import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -49,7 +50,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 /** */
 @TestInstance(Lifecycle.PER_CLASS)
-public class BigQuerySourceITCase {
+class BigQuerySourceITCase {
 
     private static final int PARALLELISM = 2;
     private static final Integer TOTAL_ROW_COUNT_PER_STREAM = 10000;
@@ -95,7 +96,7 @@ public class BigQuerySourceITCase {
     }
 
     @Test
-    public void testReadCount() throws Exception {
+    void testReadCount() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         BigQuerySource<RowData> bqSource = defaultSourceBuilder().build();
@@ -113,7 +114,7 @@ public class BigQuerySourceITCase {
     }
 
     @Test
-    public void testLimit() throws Exception {
+    void testLimit() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         final int limitSize = 10;
@@ -127,7 +128,7 @@ public class BigQuerySourceITCase {
     }
 
     @Test
-    public void testDownstreamRecovery() throws Exception {
+    void testDownstreamRecovery() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(300L);
 
@@ -147,7 +148,7 @@ public class BigQuerySourceITCase {
     }
 
     @Test
-    public void testReaderRecovery() throws Exception {
+    void testReaderRecovery() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(300L);
 
@@ -167,7 +168,7 @@ public class BigQuerySourceITCase {
                                         TOTAL_ROW_COUNT_PER_STREAM,
                                         STREAM_COUNT,
                                         StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING,
-                                        params -> StorageClientFaker.createRecordList(params),
+                                        StorageClientFaker::createRecordList,
                                         // we want this to fail 10% of the time (1 in 10 times)
                                         10D))
                         .setDeserializationSchema(
@@ -183,6 +184,56 @@ public class BigQuerySourceITCase {
                                 .executeAndCollect());
 
         assertThat(results).hasSize(TOTAL_ROW_COUNT_PER_STREAM * STREAM_COUNT);
+    }
+
+    /**
+     * Test to check the Read count when ReadOptions have a query.
+     *
+     * @throws Exception IOException when readAvrosFromQuery() fails, Exception when
+     *     executeAndCollect() fails
+     */
+    @Test
+    void testQueryReadCount() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        BigQuerySource<GenericRecord> bqSource =
+                BigQuerySource.readAvrosFromQuery(readOptions, "SELECT 1", "someProject", -1);
+
+        List<GenericRecord> results =
+                CollectionUtil.iteratorToList(
+                        env.fromSource(
+                                        bqSource,
+                                        WatermarkStrategy.noWatermarks(),
+                                        "BigQuery-Source")
+                                .executeAndCollect());
+
+        assertThat(results).hasSize(TOTAL_ROW_COUNT_PER_STREAM * STREAM_COUNT);
+    }
+
+    /**
+     * Test to check the Read count when ReadOptions have a query and a Source limit is set.
+     *
+     * @throws Exception IOException when readAvrosFromQuery() fails, Exception when
+     *     executeAndCollect() fails
+     */
+    @Test
+    void testQueryLimit() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        int queryLimit = 5;
+        BigQuerySource<GenericRecord> bqSource =
+                BigQuerySource.readAvrosFromQuery(
+                        readOptions, "SELECT 1", "someProject", queryLimit);
+
+        List<GenericRecord> results =
+                CollectionUtil.iteratorToList(
+                        env.fromSource(
+                                        bqSource,
+                                        WatermarkStrategy.noWatermarks(),
+                                        "BigQuery-Source")
+                                .executeAndCollect());
+
+        assertThat(results).hasSize(queryLimit * PARALLELISM);
     }
 
     private static class FailingMapper

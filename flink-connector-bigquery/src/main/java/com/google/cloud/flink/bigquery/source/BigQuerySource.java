@@ -196,7 +196,7 @@ public abstract class BigQuerySource<OUT>
      * @param limit the max quantity of records to be returned.
      * @return A fully initialized instance of the source, ready to read {@link GenericRecord} from
      *     the BigQuery query results.
-     * @throws IOException
+     * @throws IOException when the read fails.
      */
     public static BigQuerySource<GenericRecord> readAvrosFromQuery(
             String query, String gcpProject, Integer limit) throws IOException {
@@ -220,7 +220,7 @@ public abstract class BigQuerySource<OUT>
      * @param limit the max quantity of records to be returned.
      * @return A fully initialized instance of the source, ready to read {@link GenericRecord} from
      *     the BigQuery query results.
-     * @throws IOException
+     * @throws IOException when the read fails.
      */
     @VisibleForTesting
     static BigQuerySource<GenericRecord> readAvrosFromQuery(
@@ -230,7 +230,9 @@ public abstract class BigQuerySource<OUT>
         TableSchema tableSchema =
                 BigQueryServicesFactory.instance(connectOptions)
                         .queryClient()
-                        .dryRunQuery(readOptions.getQueryExecutionProject(), readOptions.getQuery())
+                        // Either we modify readOptions to add the gcpProject and the query
+                        // or we need to change the parameters passed to dryRunQuery()
+                        .dryRunQuery(gcpProject, query)
                         .getStatistics()
                         .getQuery()
                         .getSchema();
@@ -254,7 +256,7 @@ public abstract class BigQuerySource<OUT>
      * @param gcpProject The GCP project where the provided query will execute.
      * @return A fully initialized instance of the source, ready to read {@link GenericRecord} from
      *     the BigQuery query results.
-     * @throws IOException
+     * @throws IOException when read fails.
      */
     public static BigQuerySource<GenericRecord> readAvrosFromQuery(String query, String gcpProject)
             throws IOException {

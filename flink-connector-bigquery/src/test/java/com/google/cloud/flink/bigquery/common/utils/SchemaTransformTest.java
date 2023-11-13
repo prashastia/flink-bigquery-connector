@@ -31,6 +31,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 /** */
 public class SchemaTransformTest {
@@ -228,5 +229,164 @@ public class SchemaTransformTest {
         TableSchema transformed = SchemaTransform.bigQuerySchemaToTableSchema(schema);
 
         assertThat(transformed).isEqualTo(expected);
+    }
+
+    /**
+     * Test to check if Namespace collision (when a record or a struct has the same name as that of
+     * a previous field) is properly applied.
+     */
+    @Test
+    public void checkNameSpaceCollision() {
+        TableSchema tableSchema = new TableSchema();
+
+        final TableFieldSchema dummyRecord =
+                new TableFieldSchema()
+                        .setName("record")
+                        .setType("RECORD")
+                        .setMode("NULLABLE")
+                        .setFields(this.subFields);
+        final List<TableFieldSchema> subFields = Lists.newArrayList(dummyRecord);
+        // Create a schema that has a namespace collision:
+        List<TableFieldSchema> namespaceCollidingFields =
+                Lists.newArrayList(
+                        new TableFieldSchema()
+                                .setName("number")
+                                .setType("INTEGER")
+                                .setMode("REQUIRED"),
+                        new TableFieldSchema()
+                                .setName("species")
+                                .setType("STRING")
+                                .setMode("NULLABLE"),
+                        dummyRecord,
+                        new TableFieldSchema()
+                                .setName("anotherRecord")
+                                .setType("RECORD")
+                                .setFields(subFields));
+        tableSchema.setFields(namespaceCollidingFields);
+        Schema avroSchema =
+                SchemaTransform.toGenericAvroSchema("testSchema", tableSchema.getFields());
+
+        // Check if conversion os proper.
+        assertThat(avroSchema.getField("species").schema())
+                .isEqualTo(
+                        Schema.createUnion(
+                                Schema.create(Schema.Type.NULL),
+                                Schema.create(Schema.Type.STRING)));
+        assertThat(avroSchema.getField("number").schema())
+                .isEqualTo(Schema.create(Schema.Type.LONG));
+
+        Schema dummyRecordSchema =
+                Schema.createUnion(
+                        Schema.create(Schema.Type.NULL),
+                        Schema.createRecord(
+                                "record",
+                                "Translated Avro Schema for record",
+                                SchemaTransform.DEFAULT_NAMESPACE + ".testSchema",
+                                false,
+                                ImmutableList.of(
+                                        new Schema.Field(
+                                                "species",
+                                                Schema.createUnion(
+                                                        Schema.create(Schema.Type.NULL),
+                                                        Schema.create(Schema.Type.STRING)),
+                                                null,
+                                                (Object) null))));
+        assertThat(avroSchema.getField("record").schema()).isEqualTo(dummyRecordSchema);
+
+        //        System.out.println(avroSchema.getField("anotherRecord").schema());
+        assertThat(avroSchema.getField("anotherRecord").schema())
+                .isEqualTo(
+                        Schema.createUnion(
+                                Schema.create(Schema.Type.NULL),
+                                Schema.createRecord(
+                                        "anotherRecord",
+                                        "Translated Avro Schema for anotherRecord",
+                                        SchemaTransform.DEFAULT_NAMESPACE + ".testSchema",
+                                        false,
+                                        ImmutableList.of(
+                                                new Schema.Field(
+                                                        "record",
+                                                        Schema.createUnion(
+                                                                Schema.create(Schema.Type.NULL),
+                                                                Schema.createRecord(
+                                                                        "record",
+                                                                        "Translated Avro Schema for record",
+                                                                        SchemaTransform
+                                                                                        .DEFAULT_NAMESPACE
+                                                                                + ".testSchema.anotherRecord",
+                                                                        false,
+                                                                        ImmutableList.of(
+                                                                                new Schema.Field(
+                                                                                        "species",
+                                                                                        Schema
+                                                                                                .createUnion(
+                                                                                                        Schema
+                                                                                                                .create(
+                                                                                                                        Schema
+                                                                                                                                .Type
+                                                                                                                                .NULL),
+                                                                                                        Schema
+                                                                                                                .create(
+                                                                                                                        Schema
+                                                                                                                                .Type
+                                                                                                                                .STRING)),
+                                                                                        null,
+                                                                                        (Object)
+                                                                                                null)))))))));
+    }
+
+    /**
+     * Test for the case when Big Query releases a new dataype which is not mentioned in our map,
+     * since it is explicitly declared, we do not recieve it from Big Query so can easily go out of
+     * date.
+     */
+    @Test
+    public void testConvertInvalidBigQuerySchemaToAvroSchema() {
+        TableSchema tableSchema = new TableSchema();
+        // 1. We check invalid type:
+        List<TableFieldSchema> invalidFields =
+                Lists.newArrayList(
+                        new TableFieldSchema()
+                                .setName("number")
+                                .setType("INVALID")
+                                .setMode("REQUIRED"),
+                        new TableFieldSchema()
+                                .setName("species")
+                                .setType("STRING")
+                                .setMode("NULLABLE"));
+        tableSchema.setFields(invalidFields);
+        // Since the schema is incorrect, an exception should be thrown.
+
+        List<TableFieldSchema> fieldsInvalidType = tableSchema.getFields();
+
+        IllegalArgumentException typeException =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> SchemaTransform.toGenericAvroSchema("testSchema", fieldsInvalidType));
+        // Make sure that the error is because of an invalid type.
+        assertThat(typeException.getMessage()).contains("Unable to map BigQuery field type");
+
+        // 2. We check invalid mode:
+        invalidFields =
+                Lists.newArrayList(
+                        new TableFieldSchema()
+                                .setName("number")
+                                .setType("INTEGER")
+                                .setMode("INVALID"),
+                        new TableFieldSchema()
+                                .setName("species")
+                                .setType("STRING")
+                                .setMode("NULLABLE"));
+        // Set the new schema to test
+        tableSchema.setFields(invalidFields);
+
+        // Since the schema is incorrect, an exception should be thrown.
+        List<TableFieldSchema> fieldsInvalidMode = tableSchema.getFields();
+        IllegalArgumentException modeException =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> SchemaTransform.toGenericAvroSchema("testSchema", fieldsInvalidMode));
+        // Make sure that the error is because of an invalid mode.
+        assertThat(modeException.getMessage()).contains("Unknown BigQuery Field Mode");
     }
 }

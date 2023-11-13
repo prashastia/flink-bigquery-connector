@@ -29,10 +29,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
 
-/** The enumerator class for {@link BigQuerySource}. */
+/** The enumerator class for {@link com.google.cloud.flink.bigquery.source.BigQuerySource}. */
 @Internal
 public class BigQuerySourceEnumerator
         implements SplitEnumerator<BigQuerySourceSplit, BigQuerySourceEnumState> {
@@ -52,6 +53,41 @@ public class BigQuerySourceEnumerator
         this.context = context;
         this.splitAssigner = splitAssigner;
         this.readersAwaitingSplit = new TreeSet<>();
+    }
+
+    /**
+     * Equality Override to check if two {@link BigQuerySourceEnumerator} objects are equal.
+     *
+     * @param obj the object to compare with
+     * @return boolean true if two objects (this) and (obj) are equal, false otherwise
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BigQuerySourceEnumerator other = (BigQuerySourceEnumerator) obj;
+        return this.boundedness == other.boundedness
+                && Objects.equals(this.context, other.context)
+                && Objects.equals(this.splitAssigner, other.splitAssigner)
+                && Objects.equals(readersAwaitingSplit, other.readersAwaitingSplit);
+    }
+
+    /**
+     * hashCode Override for {@link BigQuerySourceEnumerator} object.
+     *
+     * @return hashcode of the current object
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                this.boundedness, this.context, this.splitAssigner, this.readersAwaitingSplit);
     }
 
     @Override
