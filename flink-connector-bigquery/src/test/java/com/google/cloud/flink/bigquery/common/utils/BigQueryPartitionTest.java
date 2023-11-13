@@ -30,6 +30,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 /** */
 public class BigQueryPartitionTest {
 
@@ -226,7 +229,12 @@ public class BigQueryPartitionTest {
                 BigQueryPartition.retrievePartitionColumnType(
                         StorageClientFaker.SIMPLE_BQ_TABLE_SCHEMA, "ts");
 
+        // Adds a case to check invalid column type for partition.
         Assertions.assertThat(retrieved).isEqualTo(StandardSQLTypeName.TIMESTAMP);
+        assertThrows(IllegalStateException.class, () ->
+                BigQueryPartition.retrievePartitionColumnType(
+                        StorageClientFaker.SIMPLE_BQ_TABLE_SCHEMA, "invalid_col"));
+
     }
 
     @Test
@@ -368,6 +376,73 @@ public class BigQueryPartitionTest {
                         "5");
 
         Assertions.assertThat(expected).isEqualTo(actual);
+    }
+
+    /**
+     * Test to check various invalid condition handling for partitioning.
+     * 1. HOUR based partitioning for DATE type Column.
+     * 2. INT_RANGE partitioning for TIMESTAMP partition.
+     * 3. Invalid partition id "2023-02-01",for YEAR BASED partitioning which cannot be parsed.
+     * 4. Year based partitioning for incompatible column (let's say BOOL).
+     * 5. invalid YEAR based string "20220202" while checking partition completion status.
+     */
+    @Test
+    public void testInvalidParitionConditions() {
+
+        IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class, () -> BigQueryPartition.formatPartitionRestrictionBasedOnInfo(
+                Optional.of(
+                        new TablePartitionInfo(
+                                "dragon",
+                                BigQueryPartition.PartitionType.HOUR,
+                                StandardSQLTypeName.DATE,
+                                Instant.now())),
+                "dragon",
+                ""));
+        assertTrue(exception1.getMessage().contains("The provided partition type") && exception1.getMessage().contains("is not supported as a temporal based partition for the column "));
+
+        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class, () -> BigQueryPartition.formatPartitionRestrictionBasedOnInfo(
+                Optional.of(
+                        new TablePartitionInfo(
+                                "dragon",
+                                BigQueryPartition.PartitionType.INT_RANGE,
+                                StandardSQLTypeName.TIMESTAMP,
+                                Instant.now())),
+                "dragon",
+                "2022-01-01 23:00:00"));
+        assertTrue(exception2.getMessage().contains("The provided partition type") && exception1.getMessage().contains("is not supported as a temporal based partition for the column "));
+
+        IllegalArgumentException exception3 = assertThrows(IllegalArgumentException.class, () -> BigQueryPartition.formatPartitionRestrictionBasedOnInfo(
+                Optional.of(
+                        new TablePartitionInfo(
+                                "dragon",
+                                BigQueryPartition.PartitionType.YEAR,
+                                StandardSQLTypeName.DATE,
+                                Instant.now())),
+                "dragon",
+                "2023-02-01"));
+        assertTrue(exception3.getMessage().contains("Problems while manipulating the temporal argument"));
+
+        IllegalArgumentException exception4 = assertThrows(IllegalArgumentException.class, () -> BigQueryPartition.formatPartitionRestrictionBasedOnInfo(
+                Optional.of(
+                        new TablePartitionInfo(
+                                "dragon",
+                                BigQueryPartition.PartitionType.YEAR,
+                                StandardSQLTypeName.BOOL,
+                                Instant.now())),
+                "dragon",
+                "2023-01-01"));
+        assertTrue(exception4.getMessage().contains("The provided SQL type name") && exception4.getMessage().contains(" is not supported as a partition column in BigQuery."));
+
+        RuntimeException exception5 = assertThrows(RuntimeException.class, () -> BigQueryPartition.checkPartitionCompleted(
+                        new PartitionIdWithInfo(
+                                "20220202",
+                        new TablePartitionInfo(
+                                "dragon",
+                                BigQueryPartition.PartitionType.YEAR,
+                                StandardSQLTypeName.DATE,
+                                Instant.now()))));
+        assertTrue(exception5.getMessage().contains("Problems while parsing temporal info from: "));
+
     }
 
     @Test

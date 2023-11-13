@@ -469,7 +469,7 @@ public class BigQueryPartition {
                         break;
                     default:
                         throw new IllegalArgumentException(
-                                "The lenght of the partition id is not one of the expected ones: "
+                                "The length of the partition id is not one of the expected ones: "
                                         + firstId);
                 }
                 break;
