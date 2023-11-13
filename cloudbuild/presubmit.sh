@@ -25,6 +25,13 @@ fi
 readonly MVN="./mvnw -B -e -s /workspace/cloudbuild/gcp-settings.xml -Dmaven.repo.local=/workspace/.repository"
 readonly STEP=$1
 
+readonly JAR_FOLDER="gs://connector-buck/flink-bq-connector/flink-app-jars/1.15.4/bounded/"
+readonly JAR_NAME="BigQueryExample.jar"
+readonly PATH_TO_JAR=$JAR_FOLDER$JAR_NAME
+readonly PROJECT_NAME="testproject-398714"
+readonly DATASET_NAME="babynames"
+readonly TABLE_NAME="names2014"
+
 cd /workspace
 
 case $STEP in
@@ -37,6 +44,13 @@ case $STEP in
   # Run unit & integration tests
   tests)
     $MVN clean clover:setup verify clover:aggregate clover:clover -Pclover
+    ;;
+
+ # Run e2e tests
+  e2etest)
+    gcloud config set project testproject-398714
+    #$gsutil cp {path_to_jar} $JAR_FOLDER
+    gcloud dataproc jobs submit flink --jar=$PATH_TO_JAR --cluster=flink-bounded-source-connector --region=asia-east2 -- --gcp-project $PROJECT_NAME --bq-dataset $DATASET_NAME --bq-table $TABLE_NAME --agg-prop name
     ;;
 
   *)
