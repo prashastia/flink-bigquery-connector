@@ -140,7 +140,7 @@ public class UnboundedSplitAssigner extends BigQuerySourceSplitAssigner {
     @VisibleForTesting
     void handlePartitionSplitDiscovery(DiscoveryResult discovery, Throwable t) {
         if (t != null && this.remainingTableStreams.isEmpty()) {
-            // If this was the first split discovery and it failed, throw an error
+            // If this was the first split discovery, and it failed, throw an error
             throw new RuntimeException(t);
         } else if (t != null) {
             LOG.error("Failed to poll for new read streams, continuing", t);
