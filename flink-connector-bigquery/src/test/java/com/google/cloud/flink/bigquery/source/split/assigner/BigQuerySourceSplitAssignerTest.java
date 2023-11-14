@@ -29,6 +29,8 @@ import com.google.common.truth.Truth8;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -36,6 +38,7 @@ import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 /** */
 public class BigQuerySourceSplitAssignerTest {
@@ -58,7 +61,7 @@ public class BigQuerySourceSplitAssignerTest {
         // request the retrieval of the bigquery table info
         assigner.openAndDiscoverSplits();
 
-        // should retrieve the first split representing the firt stream
+        // should retrieve the first split representing the first stream
         Optional<BigQuerySourceSplit> maybeSplit = assigner.getNext();
         Truth8.assertThat(maybeSplit).isPresent();
         // should retrieve the second split representing the second stream
@@ -90,7 +93,7 @@ public class BigQuerySourceSplitAssignerTest {
     public void testReadConfigurationChangeForQueryResultRead() throws IOException {
         String queryProject = "a-diff-project";
         String query = "SELECT 1 FROM BQ";
-        // lets keep the faked impls for the testing connection options
+        // let's keep the faked impls for the testing connection options
         BigQueryConnectOptions bqOptions = this.readOptions.getBigQueryConnectOptions();
         BigQueryReadOptions readOpt =
                 this.readOptions
@@ -129,12 +132,52 @@ public class BigQuerySourceSplitAssignerTest {
                                     inv.getArgument(0, Callable.class);
                             BiConsumer<UnboundedSplitAssigner.DiscoveryResult, Throwable> handler =
                                     inv.getArgument(1, BiConsumer.class);
-                            handler.accept(discoverCall.call(), null);
+
+                            try{
+                                handler.accept(discoverCall.call(),null);
+                            }
+                            catch (Exception e){
+                                handler.accept(null,e);
+                            }
                             return null;
                         })
                 .when(observer)
                 .schedule(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
         return observer;
+    }
+
+
+    private SplitDiscoveryScheduler createFailingObserver() {
+        // mock the observer to return our mocked context
+        SplitDiscoveryScheduler observer = Mockito.mock(SplitDiscoveryScheduler.class);
+        Mockito.doAnswer(new Answer<Void>() {
+            private int invocationCount = 0;
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Callable<UnboundedSplitAssigner.DiscoveryResult> discoverCall =
+                        invocation.getArgument(0, Callable.class);
+                BiConsumer<UnboundedSplitAssigner.DiscoveryResult, Throwable> handler =
+                        invocation.getArgument(1, BiConsumer.class);
+
+                if(invocationCount == 0){
+                    handler.accept(discoverCall.call(), null);
+                    invocationCount++;
+                }
+                else{
+                    handler.accept(discoverCall.call(), new RuntimeException("Problems while trying to discover new splits"));
+                }
+                return null;
+            }
+        })
+                .when(observer)
+                .schedule(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
+        return observer;
+    }
+
+    private UnboundedSplitAssigner createUnbounded(SplitDiscoveryScheduler observer, BigQueryReadOptions readOptions) {
+        return (UnboundedSplitAssigner)
+                BigQuerySourceSplitAssigner.createUnbounded(
+                        observer, readOptions, BigQuerySourceEnumState.initialState());
     }
 
     private UnboundedSplitAssigner createUnbounded(SplitDiscoveryScheduler observer) {
@@ -144,29 +187,33 @@ public class BigQuerySourceSplitAssignerTest {
     }
 
     @Test
-    public void testUnboundedAssignment() {
+    public void testFailingDiscoverSplits() throws IOException {
+
+
+        BigQueryReadOptions invalidReadOptions = StorageClientFaker.createInvalidReadOptions(
+                0, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+
         SplitDiscoveryScheduler observer = createObserver();
-        BigQuerySourceSplitAssigner assigner = createUnbounded(observer);
+        BigQuerySourceSplitAssigner assigner = createUnbounded(observer, invalidReadOptions);
 
+        assertThrows(RuntimeException.class, assigner::discoverSplits);
+
+        // This assigner fails only after the second invocation.
+        SplitDiscoveryScheduler failingObserver = createFailingObserver();
+
+        assigner = createUnbounded(failingObserver, readOptions);
+
+        // This call will succeed
         assigner.discoverSplits();
-        // we should validate that the context and notify methods were called in the observer during
-        // the discovery process
-        Mockito.verify(observer, Mockito.times(1))
-                .schedule(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
-        Mockito.verify(observer, Mockito.times(1)).notifySplits();
 
-        BigQuerySourceEnumState state = assigner.snapshotState(0);
+        BigQuerySourceEnumState state1 =assigner.snapshotState(0);
+        // This call fails
+        assigner.discoverSplits();
 
-        // we should have captured 4 partitions
-        assertThat(state.getLastSeenPartitions()).hasSize(4);
-        // and since we are hardcoding 2 streams per each read session in the fake service we should
-        // see 8 read streams being discovered
-        assertThat(state.getRemaniningTableStreams()).hasSize(8);
-        // since no assign request has been done, no splits or anything else should have been
-        // registered in the state
-        assertThat(state.getCompletedTableStreams()).isEmpty();
-        assertThat(state.getAssignedSourceSplits()).isEmpty();
-        assertThat(state.getRemainingSourceSplits()).isEmpty();
+        BigQuerySourceEnumState state2 =assigner.snapshotState(0);
+
+        assertThat(state1).isEqualTo(state2);
+
     }
 
     @Test(expected = RuntimeException.class)
@@ -205,5 +252,31 @@ public class BigQuerySourceSplitAssignerTest {
         assertThat(result).startsWith(someRestriction);
         assertThat(result).endsWith(newRestriction);
         assertThat(result).isEqualTo(someRestriction + " AND " + newRestriction);
+    }
+
+    @Test
+    public void testUnboundedAssignment() {
+        SplitDiscoveryScheduler observer = createObserver();
+        BigQuerySourceSplitAssigner assigner = createUnbounded(observer);
+
+        assigner.discoverSplits();
+        // we should validate that the context and notify methods were called in the observer during
+        // the discovery process
+        Mockito.verify(observer, Mockito.times(1))
+                .schedule(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
+        Mockito.verify(observer, Mockito.times(1)).notifySplits();
+
+        BigQuerySourceEnumState state = assigner.snapshotState(0);
+
+        // we should have captured 4 partitions
+        assertThat(state.getLastSeenPartitions()).hasSize(4);
+        // and since we are hardcoding 2 streams per each read session in the fake service we should
+        // see 8 read streams being discovered
+        assertThat(state.getRemaniningTableStreams()).hasSize(8);
+        // since no assign request has been done, no splits or anything else should have been
+        // registered in the state
+        assertThat(state.getCompletedTableStreams()).isEmpty();
+        assertThat(state.getAssignedSourceSplits()).isEmpty();
+        assertThat(state.getRemainingSourceSplits()).isEmpty();
     }
 }

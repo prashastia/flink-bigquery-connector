@@ -298,6 +298,45 @@ public class StorageClientFaker {
         }
     }
 
+    public static class FakeInvalidBigQueryServices extends FakeBigQueryServices {
+
+        static FakeInvalidBigQueryServices instance = null;
+        static final Object LOCK = new Object();
+
+        static FakeBigQueryServices getInstance(FakeBigQueryServices.FakeBigQueryStorageReadClient storageReadClient) {
+            if (instance == null) {
+                synchronized (LOCK) {
+                    if (instance == null) {
+                        instance = Mockito.spy(new FakeInvalidBigQueryServices(storageReadClient));
+                    }
+                }
+            }
+            return instance;
+        }
+        private FakeInvalidBigQueryServices(FakeBigQueryServices.FakeBigQueryStorageReadClient storageReadClient){
+            super(storageReadClient);
+        }
+
+        @Override
+        public QueryDataClient getQueryDataClient(CredentialsOptions readOptions) {
+            return FakeInvalidQueryDataClient.getInstance();
+        }
+
+        static class FakeInvalidQueryDataClient extends FakeBigQueryServices.FakeQueryDataClient {
+            static FakeInvalidQueryDataClient instance = Mockito.spy(new FakeInvalidQueryDataClient());
+
+            static QueryDataClient getInstance() {
+                return instance;
+            }
+            @Override
+            public List<PartitionIdWithInfoAndStatus> retrievePartitionsStatus(
+                    String project, String dataset, String table) {
+                throw new RuntimeException("Failed to retrieve partition status");
+            }
+        }
+
+    }
+
     public static final String SIMPLE_AVRO_SCHEMA_FIELDS_STRING =
             " \"fields\": [\n"
                     + "   {\"name\": \"name\", \"type\": \"string\"},\n"
@@ -483,6 +522,58 @@ public class StorageClientFaker {
                                         () -> {
                                             return FakeBigQueryServices.getInstance(
                                                     new StorageClientFaker.FakeBigQueryServices
+                                                            .FakeBigQueryStorageReadClient(
+                                                            StorageClientFaker.fakeReadSession(
+                                                                    expectedRowCount,
+                                                                    expectedReadStreamCount,
+                                                                    avroSchemaString),
+                                                            dataGenerator,
+                                                            errorPercentage));
+                                        })
+                                .build())
+                .build();
+    }
+
+
+    public static BigQueryReadOptions createInvalidReadOptions(
+            Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString)
+            throws IOException {
+        return createInvalidReadOptions(
+                expectedRowCount,
+                expectedReadStreamCount,
+                avroSchemaString,
+                params -> StorageClientFaker.createRecordList(params));
+    }
+
+    public static BigQueryReadOptions createInvalidReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String avroSchemaString,
+            SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator)
+            throws IOException {
+        return createInvalidReadOptions(
+                expectedRowCount, expectedReadStreamCount, avroSchemaString, dataGenerator, 0D);
+    }
+
+    public static BigQueryReadOptions createInvalidReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String avroSchemaString,
+            SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator,
+            Double errorPercentage)
+            throws IOException {
+        return BigQueryReadOptions.builder()
+                .setSnapshotTimestampInMillis(Instant.now().toEpochMilli())
+                .setBigQueryConnectOptions(
+                        BigQueryConnectOptions.builder()
+                                .setDataset("dataset")
+                                .setProjectId("project")
+                                .setTable("table")
+                                .setCredentialsOptions(null)
+                                .setTestingBigQueryServices(
+                                        () -> {
+                                            return FakeInvalidBigQueryServices.getInstance(
+                                                    new StorageClientFaker.FakeInvalidBigQueryServices
                                                             .FakeBigQueryStorageReadClient(
                                                             StorageClientFaker.fakeReadSession(
                                                                     expectedRowCount,
