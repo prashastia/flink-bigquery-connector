@@ -216,6 +216,19 @@ public class BigQuerySourceSplitAssignerTest {
 
     }
 
+    @Test
+    public void checkOldestPartitionId() throws IOException {
+        BigQueryReadOptions modifiedReadOptions = StorageClientFaker.createModifiedReadOptions(
+                10, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+        SplitDiscoveryScheduler observer = createObserver();
+        BigQuerySourceSplitAssigner assigner = createUnbounded(observer, modifiedReadOptions);
+        assigner.discoverSplits();
+        BigQuerySourceEnumState state = assigner.snapshotState(0);
+        // Since we set the oldest partition time cutoff, 6 streams will be present now.
+        assertThat(state.getRemaniningTableStreams().size()).isEqualTo(6);
+    }
+
+
     @Test(expected = RuntimeException.class)
     public void testRuntimeExWhenHandlingExceptionAndNoData() {
         SplitDiscoveryScheduler observer = createObserver();

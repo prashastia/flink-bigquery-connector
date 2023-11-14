@@ -535,6 +535,38 @@ public class StorageClientFaker {
     }
 
 
+    public static BigQueryReadOptions createModifiedReadOptions(
+            Integer expectedRowCount,
+            Integer expectedReadStreamCount,
+            String avroSchemaString)
+            throws IOException {
+        SerializableFunction<RecordGenerationParams, List<GenericRecord>> dataGenerator = StorageClientFaker::createRecordList;
+        Double errorPercentage = 0.0D;
+        return BigQueryReadOptions.builder()
+                .setSnapshotTimestampInMillis(Instant.now().toEpochMilli())
+                .setOldestPartitionId(Instant.now().atOffset(ZoneOffset.UTC).minusHours(4).format(DateTimeFormatter.ofPattern("yyyyMMddHH")))
+                .setBigQueryConnectOptions(
+                        BigQueryConnectOptions.builder()
+                                .setDataset("dataset")
+                                .setProjectId("project")
+                                .setTable("table")
+                                .setCredentialsOptions(null)
+                                .setTestingBigQueryServices(
+                                        () -> {
+                                            return FakeBigQueryServices.getInstance(
+                                                    new StorageClientFaker.FakeBigQueryServices
+                                                            .FakeBigQueryStorageReadClient(
+                                                            StorageClientFaker.fakeReadSession(
+                                                                    expectedRowCount,
+                                                                    expectedReadStreamCount,
+                                                                    avroSchemaString),
+                                                            dataGenerator,
+                                                            errorPercentage));
+                                        })
+                                .build())
+                .build();
+    }
+
     public static BigQueryReadOptions createInvalidReadOptions(
             Integer expectedRowCount, Integer expectedReadStreamCount, String avroSchemaString)
             throws IOException {
