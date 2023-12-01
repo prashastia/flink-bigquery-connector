@@ -12,7 +12,6 @@ from collections.abc import Sequence
 import time
 
 from absl import app
-from absl import flags
 from google.cloud import bigquery
 from google.cloud import dataproc_v1
 from google.cloud import storage
@@ -186,21 +185,60 @@ def run(
 
 
 def main(argv: Sequence[str]) -> None:
-  FLAGS_ = flags.FLAGS
-  FLAGS_(argv)
-  print("argv values:")  
-  for i in range(len(argv)):
-    print(argv[i])  
-  if len(argv) > 1:
-    raise app.UsageError("Too many or too less command-line arguments.")
-  job_id = _JOB_ID.value
-  project_id = _PROJECT_ID.value
-  cluster_name = _CLUSTER_NAME.value
-  no_workers = _NO_WORKERS.value
-  region = _REGION.value
-  arg_project = _ARG_PROJECT.value
-  arg_dataset = _ARG_DATASET.value
-  arg_table = _ARG_TABLE.value
+  if len(argv) != 9:
+      raise app.UsageError("Too many or too less command-line arguments.")
+    
+  # Defining default values.
+  job_id = ""
+  project_id = ""
+  cluster_name = ""
+  no_workers = 0
+  region = ""
+  arg_project = ""
+  arg_dataset = ""
+  arg_table = ""
+
+  # Getting the arguments one by one.
+  for argument in argv[1:]:
+    arg_value = argument.split("=")
+    arg_value = arg_value[1]
+    if argument.startswith('--job_id'):
+        job_id = arg_value
+    elif argument.startswith("--project_id"):
+        project_id = arg_value
+    elif argument.startswith("--cluster_name"):
+        cluster_name = arg_value
+    elif argument.startswith("--no_workers"):
+        no_workers = int(arg_value)
+    elif argument.startswith("--region"):
+        region = arg_value
+    elif argument.startswith("--arg_project"):
+        arg_project = arg_value
+    elif argument.startswith("--arg_dataset"):
+        arg_dataset = arg_value
+    elif argument.startswith("--arg_table"):
+        arg_table = arg_value
+    else:
+        raise UserWarning("Invalid argument provided")
+
+  # Check if all arguments are there.
+  if job_id == "":
+    raise UserWarning("job_id argument not provided")
+  elif project_id == "":
+    raise UserWarning("project_id argument not provided")
+  elif cluster_name == "":
+    raise UserWarning("cluster_name argument not provided")
+  elif no_workers == 0:
+    raise UserWarning("no_workers argument not provided")
+  elif region == "":
+    raise UserWarning("region argument not provided")
+  elif arg_project == "":
+    raise UserWarning("arg_project argument not provided")
+  elif arg_dataset == "":
+    raise UserWarning("arg_dataset argument not provided")
+  elif arg_table == "":
+    raise UserWarning("arg_table argument not provided")
+        
   log_names = []
   for worker_no in range(no_workers):
     log_names.append(
@@ -210,33 +248,6 @@ def main(argv: Sequence[str]) -> None:
   run(
       project_id, log_names, region, job_id, arg_project, arg_dataset, arg_table
   )
-
-
-_JOB_ID = flags.DEFINE_string("job_id", "", "Job Id of dataproc job")
-_PROJECT_ID = flags.DEFINE_string(
-    "project_id", "", "GCP Project ID on which cluster is run"
-)
-_CLUSTER_NAME = flags.DEFINE_string(
-    "cluster_name", "", "GCP Project ID on which cluster is run"
-)
-_NO_WORKERS = flags.DEFINE_integer(
-    "no_workers", 2, "Number of workers on the cluster"
-)
-_REGION = flags.DEFINE_string(
-    "region", "us-central1", "region in which Cluster is created."
-)
-
-_ARG_PROJECT = flags.DEFINE_string(
-    "arg_project", "", "Resource Project of table to be read"
-)
-_ARG_DATASET = flags.DEFINE_string(
-    "arg_dataset", "", "Resource Dataset of table to be read"
-)
-
-_ARG_TABLE = flags.DEFINE_string(
-    "arg_table", "", "Resource Table of table to be read"
-)
-
 
 if __name__ == "__main__":
   app.run(main)
