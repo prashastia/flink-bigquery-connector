@@ -13,8 +13,8 @@ RUN \
 COPY ./cloudbuild/python_scripts /workspace/python_scripts/
 
 # Install Python and Basic Python Tools (Assuming VM has them)
-RUN apt-get install -y python python-dev python-setuptools
-RUN apt-get install -y python-pip 
+RUN apt-get install -y python3
+RUN apt-get install -y python3-pip 
 
 # Get pip to download and install requirements:
-RUN pip install -r /workspace/python_scripts/requirements.txt
+RUN pip3 install -r /workspace/python_scripts/requirements.txt
