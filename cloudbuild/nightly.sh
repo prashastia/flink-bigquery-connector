@@ -36,7 +36,7 @@ case $STEP in
     # gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT_SIMPLE_TABLE --bq-dataset $ARG_DATASET_SIMPLE_TABLE --bq-table $ARG_TABLE_SIMPLE_TABLE --agg-prop name
     # Now check the success of the job
     JOB_ID='9a431a95978148139483e8aeb54679c7'
-    python ./python_scripts/parseLogs.py --job_id $JOB_ID --project_id $PROJECT_ID --cluster_name $CLUSTER_NAME --no_workers $NO_WORKERS --region $REGION --arg_project $ARG_PROJECT --arg_dataset $ARG_DATASET --arg_table $ARG_TABLE
+    python ./python_scripts/parse_logs.py --job_id $JOB_ID --project_id $PROJECT_ID --cluster_name $CLUSTER_NAME --no_workers $NO_WORKERS --region $REGION --arg_project $ARG_PROJECT --arg_dataset $ARG_DATASET --arg_table $ARG_TABLE
     ret=$?
     if [ $ret -ne 0 ]
     then
