@@ -5,7 +5,7 @@ uses this job-id to get the yarn application number.
 The yarn application number enables it to read throughh the yarn logs to check
 for the number iof records.
 In case the number of records match that of BQ table it returns, in case of
-mismatch, it thrwos an error.
+mismatch, it throws an error.
 """
 
 from collections.abc import Sequence
@@ -188,9 +188,9 @@ def run(
 def main(argv: Sequence[str]) -> None:
   print("argv values:")  
   for i in range(len(argv)):
-          print(argv[i])  
+    print(argv[i])  
   if len(argv) > 1:
-      raise app.UsageError("Too many or too less command-line arguments.")
+    raise app.UsageError("Too many or too less command-line arguments.")
   job_id = _JOB_ID.value
   project_id = _PROJECT_ID.value
   cluster_name = _CLUSTER_NAME.value
