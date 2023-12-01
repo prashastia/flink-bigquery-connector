@@ -202,6 +202,8 @@ def main(argv: Sequence[str]) -> None:
   for argument in argv[1:]:
     arg_value = argument.split("=")
     arg_value = arg_value[1]
+    print("argument", argument)  
+    print("arg_value", arg_value)  
     if argument.startswith('--job_id'):
       job_id = arg_value
     elif argument.startswith("--project_id"):
