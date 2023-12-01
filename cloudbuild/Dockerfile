@@ -8,13 +8,13 @@ RUN \
   apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && \
   apt-get update -y && \
   apt-get install google-cloud-cli -y
-  
-# Install Python and Basic Python Tools (Assuming VM has them)
-# RUN apt-get install -y python python-dev python-setuptools
-# RUN apt-get install -y python-pip 
 
 # Add the current directory to the container
-ADD ./cloudbuild/python_scripts /workspace/ 
+COPY ./cloudbuild/python_scripts /workspace/python_scripts/
+
+# Install Python and Basic Python Tools (Assuming VM has them)
+RUN apt-get install -y python python-dev python-setuptools
+RUN apt-get install -y python-pip 
 
 # Get pip to download and install requirements:
 RUN pip install -r /workspace/python_scripts/requirements.txt
