@@ -17,7 +17,7 @@ steps:
     waitFor: ['init']
     entrypoint: 'bash'
     args: ['/workspace/cloudbuild/nightly.sh', 'e2etest']
-     env:
+    env:
       - 'JAR_LOCATION=${_JAR_LOCATION}'
       - 'PROJECT_ID=${_PROJECT_ID}'
       - 'REGION=${_REGION}'
