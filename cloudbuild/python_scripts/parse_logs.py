@@ -186,6 +186,8 @@ def run(
 
 
 def main(argv: Sequence[str]) -> None:
+  FLAGS_ = flags.FLAGS
+  FLAGS_(argv)
   print("argv values:")  
   for i in range(len(argv)):
     print(argv[i])  
