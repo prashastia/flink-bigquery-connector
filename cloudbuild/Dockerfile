@@ -14,7 +14,7 @@ RUN \
 # RUN apt-get install -y python-pip 
 
 # Add the current directory to the container
-ADD ./python_scripts /workspace/ 
+ADD ./cloudbuild/python_scripts /workspace/ 
 
 # Get pip to download and install requirements:
 RUN pip install -r /workspace/python_scripts/requirements.txt
