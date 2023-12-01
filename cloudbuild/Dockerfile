@@ -8,3 +8,13 @@ RUN \
   apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && \
   apt-get update -y && \
   apt-get install google-cloud-cli -y
+  
+# Install Python and Basic Python Tools
+RUN apt-get install -y python python-dev python-setuptools
+RUN apt-get install -y python-pip 
+
+# Add the current directory to the container
+ADD . /python_scripts
+
+# Get pip to download and install requirements:
+RUN pip install -r /python_scripts/requirements.txt
