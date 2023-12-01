@@ -9,12 +9,12 @@ RUN \
   apt-get update -y && \
   apt-get install google-cloud-cli -y
   
-# Install Python and Basic Python Tools
-RUN apt-get install -y python python-dev python-setuptools
-RUN apt-get install -y python-pip 
+# Install Python and Basic Python Tools (Assuming VM has them)
+# RUN apt-get install -y python python-dev python-setuptools
+# RUN apt-get install -y python-pip 
 
 # Add the current directory to the container
-ADD . /python_scripts
+ADD ./python_scripts /workspace/ 
 
 # Get pip to download and install requirements:
-RUN pip install -r /python_scripts/requirements.txt
+RUN pip install -r /workspace/python_scripts/requirements.txt
