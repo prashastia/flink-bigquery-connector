@@ -186,8 +186,11 @@ def run(
 
 
 def main(argv: Sequence[str]) -> None:
+  print("argv values:")  
+  for i in range(len(argv)):
+          print(argv[i])  
   if len(argv) > 1:
-    raise app.UsageError("Too many or too less command-line arguments.")
+      raise app.UsageError("Too many or too less command-line arguments.")
   job_id = _JOB_ID.value
   project_id = _PROJECT_ID.value
   cluster_name = _CLUSTER_NAME.value
