@@ -5,16 +5,17 @@ steps:
     args: ['build', '--tag=gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly', '-f', 'cloudbuild/Dockerfile', '.']
 
 # 2. Fetch maven and dependencies
-  - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
-    id: 'init'
-    waitFor: ['docker-build']
-    entrypoint: 'bash'
-    args: ['/workspace/cloudbuild/nightly.sh', 'init']
+  # - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
+  #   id: 'init'
+  #   waitFor: ['docker-build']
+  #   entrypoint: 'bash'
+  #   args: ['/workspace/cloudbuild/nightly.sh', 'init']
    
 # 3. Start the e2e tests  
   - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
     id: 'e2e-tests'
-    waitFor: ['init']
+    # waitFor: ['init']
+    waitFor: ['docker-build']
     entrypoint: 'bash'
     args: ['/workspace/cloudbuild/nightly.sh', 'e2etest']
     env:
