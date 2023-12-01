@@ -10,6 +10,14 @@ steps:
     waitFor: ['docker-build']
     entrypoint: 'bash'
     args: ['/workspace/cloudbuild/nightly.sh', 'init']
+    env:
+      - 'JAR_LOCATION=${_JAR_LOCATION}'
+      - 'PROJECT_ID=${_PROJECT_ID}'
+      - 'REGION=${_REGION}'
+      - 'CLUSTER_NAME=${_CLUSTER_NAME}'
+      - 'ARG_PROJECT_SIMPLE_TABLE=${_ARG_PROJECT_SIMPLE_TABLE}'
+      - 'ARG_DATASET_SIMPLE_TABLE=${_ARG_DATASET_SIMPLE_TABLE}'
+      - 'ARG_TABLE_SIMPLE_TABLE=${_ARG_TABLE_SIMPLE_TABLE}'
 
 # 3. Start the e2e tests  
   - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
