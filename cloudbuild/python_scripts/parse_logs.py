@@ -203,23 +203,23 @@ def main(argv: Sequence[str]) -> None:
     arg_value = argument.split("=")
     arg_value = arg_value[1]
     if argument.startswith('--job_id'):
-        job_id = arg_value
+      job_id = arg_value
     elif argument.startswith("--project_id"):
-        project_id = arg_value
+      project_id = arg_value
     elif argument.startswith("--cluster_name"):
-        cluster_name = arg_value
+      cluster_name = arg_value
     elif argument.startswith("--no_workers"):
-        no_workers = int(arg_value)
+      no_workers = int(arg_value)
     elif argument.startswith("--region"):
-        region = arg_value
+      region = arg_value
     elif argument.startswith("--arg_project"):
-        arg_project = arg_value
+      arg_project = arg_value
     elif argument.startswith("--arg_dataset"):
-        arg_dataset = arg_value
+      arg_dataset = arg_value
     elif argument.startswith("--arg_table"):
-        arg_table = arg_value
+      arg_table = arg_value
     else:
-        raise UserWarning("Invalid argument provided")
+      raise UserWarning("Invalid argument provided")
 
   # Check if all arguments are there.
   if job_id == "":
