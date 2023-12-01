@@ -28,8 +28,25 @@ case $STEP in
     ;;
   # Run e2e tests
   e2etest)
-    gcloud config set project testproject-398714
-    gcloud dataproc jobs submit flink --jar=gs://connector-buck/flink-bq-connector/flink-app-jars/1.15.4/bounded/BigQueryExample.jar --cluster=flink-bounded-source-connector --region=asia-east2 -- --gcp-project testproject-398714 --bq-dataset babynames --bq-table names_2014 --agg-prop name
+    gcloud config set project $PROJECT_ID
+    # Create a random JOB_ID
+    JOB_ID=$(printf '%s' $(echo "$RANDOM" | md5) | cut -c 1-25)
+    JOB_ID=2015dff3e51c86f4edeb53cbc
+    echo JOB ID: "$JOB_ID"
+    # We won't run this async as we can wait for a bounded job to succeed or fail.
+    gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT_SIMPLE_TABLE --bq-dataset $ARG_DATASET_SIMPLE_TABLE --bq-table $ARG_TABLE_SIMPLE_TABLE --agg-prop name
+    # Now check the success of the job
+    # python parse_logs/parseLogs.py "$JOB_ID" $PROJECT_ID $CLUSTER_NAME $NO_WORKERS $REGION $ARG_PROJECT $ARG_DATASET $ARG_TABLE
+    # ret=$?
+    # if [ $ret -ne 0 ]
+    # then
+    #    echo Run Failed
+    #    exit 1
+    # else
+    #    echo Run Succeeds
+    # fi
+    
+    # gcloud dataproc jobs submit flink --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=asia-east2 -- --gcp-project testproject-398714 --bq-dataset babynames --bq-table names_2014 --agg-prop name
     ;;
 
   *)
