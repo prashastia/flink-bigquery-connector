@@ -31,7 +31,6 @@ case $STEP in
     gcloud config set project $PROJECT_ID
     # Create a random JOB_ID
     JOB_ID=$(printf '%s' $(echo "$RANDOM" | md5) | cut -c 1-25)
-    JOB_ID=2015dff3e51c86f4edeb53cbc
     echo JOB ID: "$JOB_ID"
     # We won't run this async as we can wait for a bounded job to succeed or fail.
     gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT_SIMPLE_TABLE --bq-dataset $ARG_DATASET_SIMPLE_TABLE --bq-table $ARG_TABLE_SIMPLE_TABLE --agg-prop name
