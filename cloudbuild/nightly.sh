@@ -28,22 +28,23 @@ case $STEP in
     ;;
   # Run e2e tests
   e2etest)
-    gcloud config set project $PROJECT_ID
+    # gcloud config set project $PROJECT_ID
     # Create a random JOB_ID
-    JOB_ID=$(printf '%s' $(echo "$RANDOM" | md5) | cut -c 1-25)
-    echo JOB ID: "$JOB_ID"
+    # JOB_ID=$(printf '%s' $(echo "$RANDOM" | md5) | cut -c 1-25)
+    # echo JOB ID: "$JOB_ID"
     # We won't run this async as we can wait for a bounded job to succeed or fail.
-    gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT_SIMPLE_TABLE --bq-dataset $ARG_DATASET_SIMPLE_TABLE --bq-table $ARG_TABLE_SIMPLE_TABLE --agg-prop name
+    # gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT_SIMPLE_TABLE --bq-dataset $ARG_DATASET_SIMPLE_TABLE --bq-table $ARG_TABLE_SIMPLE_TABLE --agg-prop name
     # Now check the success of the job
-    # python parse_logs/parseLogs.py "$JOB_ID" $PROJECT_ID $CLUSTER_NAME $NO_WORKERS $REGION $ARG_PROJECT $ARG_DATASET $ARG_TABLE
-    # ret=$?
-    # if [ $ret -ne 0 ]
-    # then
-    #    echo Run Failed
-    #    exit 1
-    # else
-    #    echo Run Succeeds
-    # fi
+    JOB_ID='9a431a95978148139483e8aeb54679c7'
+    python ./python_scripts/parseLogs.py --job_id $JOB_ID --project_id $PROJECT_ID --cluster_name $CLUSTER_NAME --no_workers $NO_WORKERS --region $REGION --arg_project $ARG_PROJECT --arg_dataset $ARG_DATASET --arg_table $ARG_TABLE
+    ret=$?
+    if [ $ret -ne 0 ]
+    then
+       echo Run Failed
+       exit 1
+    else
+       echo Run Succeeds
+    fi
     
     # gcloud dataproc jobs submit flink --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=asia-east2 -- --gcp-project testproject-398714 --bq-dataset babynames --bq-table names_2014 --agg-prop name
     ;;
