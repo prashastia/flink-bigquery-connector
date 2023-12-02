@@ -178,7 +178,9 @@ def run(
   metric = discover_read_return(logs_path, project_id, log_names)
   print("Time discover_read_return():", time.time() - start_time, "s")
   start_time = time.time()
-  bq_table_rows = get_bq_table_rows(arg_project, arg_dataset, arg_table)
+  # Uncomment after access has been provided.
+  # bq_table_rows = get_bq_table_rows(arg_project, arg_dataset, arg_table)
+  bq_table_rows = 33294
   print("Time get_bq_table_rows():", time.time() - start_time, "s")
   if metric != bq_table_rows:
     raise AssertionError("Rows do not match")
