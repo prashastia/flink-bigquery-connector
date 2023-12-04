@@ -18,7 +18,7 @@ from google.cloud import storage
 
 
 # Remember these are the ones from args.
-def get_bq_table_rows(project, dataset, table):
+def get_bq_table_rows(project_id, project, dataset, table):
   dataset_ref = bigquery.DatasetReference(project=project, dataset_id=dataset)
   table_ref = bigquery.TableReference(dataset_ref, table_id=table)
   client = bigquery.Client(project=project_id)
@@ -179,7 +179,7 @@ def run(
   print("Time discover_read_return():", time.time() - start_time, "s")
   start_time = time.time()
   # Uncomment after access has been provided.
-  bq_table_rows = get_bq_table_rows(arg_project, arg_dataset, arg_table)
+  bq_table_rows = get_bq_table_rows(project_id, arg_project, arg_dataset, arg_table)
   # bq_table_rows = 33294
   print("Time get_bq_table_rows():", time.time() - start_time, "s")
   if metric != bq_table_rows:
