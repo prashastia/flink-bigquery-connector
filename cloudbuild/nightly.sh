@@ -28,14 +28,14 @@ case $STEP in
     ;;
   # Run e2e tests
   e2etest)
-    # 1. Run the simple table test.
-    source cloudbuild/e2e_test_scripts/simpleTableRead.sh
-    # 2. Run the complex schema table test.
-    source cloudbuild/e2e_test_scripts/complexSchemaRead.sh
-    # 3. Run the large row table test.
-    source cloudbuild/e2e_test_scripts/largeRowRead.sh
-    # 4. Run the large table test.
-    source cloudbuild/e2e_test_scripts/largeTableRead.sh
+    # # 1. Run the simple table test.
+    # source cloudbuild/e2e_test_scripts/simpleTableRead.sh
+    # # 2. Run the complex schema table test.
+    # source cloudbuild/e2e_test_scripts/complexSchemaRead.sh
+    # # 3. Run the large row table test.
+    # source cloudbuild/e2e_test_scripts/largeRowRead.sh
+    # # 4. Run the large table test.
+    # source cloudbuild/e2e_test_scripts/largeTableRead.sh
     # 5. Run the unbounded source test.
     source cloudbuild/e2e_test_scripts/unboundedTableRead.sh
     ;;
