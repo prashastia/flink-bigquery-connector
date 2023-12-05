@@ -41,7 +41,7 @@ class TableCreationUtils:
       table_id: id of the table of the form {project_id}.{dataset_id}.{table_id}
     """
     self.table_type = table_type
-    self.schema = avro.schema.Parse(simple_avro_schema_string)
+    self.schema = avro.schema.parse(simple_avro_schema_string)
     self.no_rows_per_batch = no_rows_per_batch
     self.avro_file_local = avro_file_local
     self.table_id = table_id
