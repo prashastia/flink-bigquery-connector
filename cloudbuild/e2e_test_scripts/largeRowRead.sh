@@ -20,9 +20,9 @@ gcloud config set project $PROJECT_ID
 JOB_ID=$(printf '%s' $(echo "$RANDOM" | md5sum) | cut -c 1-25)
 echo JOB ID: "$JOB_ID"
 # We won't run this async as we can wait for a bounded job to succeed or fail.
-gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT_LARGE_ROW_TABLE --bq-dataset $ARG_DATASET_LARGE_ROW_TABLE --bq-table $ARG_TABLE_LARGE_ROW_TABLE --agg-prop name
+gcloud dataproc jobs submit flink --id "$JOB_ID" --jar=$JAR_LOCATION --cluster=$CLUSTER_NAME --region=$REGION -- --gcp-project $ARG_PROJECT --bq-dataset $ARG_DATASET --bq-table $ARG_TABLE_LARGE_ROW_TABLE --agg-prop name
 # Now check the success of the job
-python3 cloudbuild/python_scripts/parse_logs.py -- --job_id=$JOB_ID --project_id=$PROJECT_ID --cluster_name=$CLUSTER_NAME --no_workers=$NO_WORKERS --region=$REGION --arg_project=$ARG_PROJECT_LARGE_ROW_TABLE --arg_dataset=$ARG_DATASET_LARGE_ROW_TABLE --arg_table=$ARG_TABLE_LARGE_ROW_TABLE
+python3 cloudbuild/python_scripts/parse_logs.py -- --job_id=$JOB_ID --project_id=$PROJECT_ID --cluster_name=$CLUSTER_NAME --no_workers=$NO_WORKERS --region=$REGION --arg_project=$ARG_PROJECT --arg_dataset=$ARG_DATASET --arg_table=$ARG_TABLE_LARGE_ROW_TABLE
 ret=$?
 if [ $ret -ne 0 ]
 then
