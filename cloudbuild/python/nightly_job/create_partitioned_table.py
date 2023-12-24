@@ -2,13 +2,18 @@
 
 Python script to create a BigQuery partitioned table.
 """
-
+import sys
+import os
 from collections.abc import Sequence
 import datetime
 import threading
 
 from absl import app
 from google.cloud import bigquery
+
+parent_dir = os.path.dirname(os.path.realpath(__file__))
+grand_grand_parent_dir = os.path.dirname(os.path.dirname(parent_dir))
+sys.path.append(grand_grand_parent_dir)
 
 from cloudbuild.python.utils import table_type, utils
 
