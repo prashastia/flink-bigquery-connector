@@ -7,8 +7,7 @@ import datetime
 import threading
 import time
 from absl import app
-from utils import table_type
-from utils import utils
+from cloudbuild.python.utils import table_type, utils
 
 
 def wait():
