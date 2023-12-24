@@ -11,7 +11,7 @@ import threading
 from absl import app
 from google.cloud import bigquery
 
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../../cloudbuild'))
 print(sys.path)
 from cloudbuild.python.utils import table_type, utils
 
