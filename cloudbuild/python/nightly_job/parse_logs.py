@@ -30,7 +30,7 @@ from google.cloud import bigquery
 from google.cloud import dataproc_v1
 from google.cloud import storage
 
-from utils import utils
+from cloudbuild.python.utils import utils
 
 
 def get_bq_query_result_row_count(client_project_name, query):
