@@ -12,7 +12,7 @@ from absl import app
 from google.cloud import bigquery
 
 sys.path.insert(0, os.path.abspath('../../'))
-
+print(sys.path)
 from cloudbuild.python.utils import table_type, utils
 
 
