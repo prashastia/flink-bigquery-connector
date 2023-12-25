@@ -22,6 +22,9 @@ gcloud config set project "$PROJECT_ID"
 gcloud config set compute/region "$REGION"
 gcloud config set compute/zone "$ZONE"
 
+gcloud storage buckets create gs://"$TEMP_BUCKET" --project="$PROJECT_ID" --location="$REGION"
+gcloud storage buckets create gs://"$STAGING_BUCKET" --project="$PROJECT_ID" --location="$REGION"
+
 gcloud dataproc clusters create "$CLUSTER_NAME" \
     --region="$REGION" \
     --image-version="$DATAPROC_IMAGE_VERSION" \
