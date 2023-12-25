@@ -13,7 +13,8 @@ from google.cloud import bigquery
 
 sys.path.insert(1, os.path.abspath('../utils'))
 print(sys.path)
-import table_type, utils
+
+from utils import table_type, utils
 
 
 def create_partitioned_table(table_id):
