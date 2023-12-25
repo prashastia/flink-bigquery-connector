@@ -22,9 +22,10 @@ cd /workspace
 case $STEP in
 
   cancel_dataproc_jobs)
-   # 2. Cancel the second cluster jobs
-    python3 cloudbuild/e2e-test-scripts/cancel_job_delete_cluster.sh "$REGION_SMALL_TEST" "$CLUSTER_NAME_SMALL_TEST"
-    python3 cloudbuild/e2e-test-scripts/cancel_job_delete_cluster.sh "$REGION_UNBOUNDED_TABLE_TEST" "$CLUSTER_NAME_UNBOUNDED_TABLE_TEST"
+    # Cancel the jobs running on the cluster and then delete the cluster. [Bounded Read]
+    source cloudbuild/e2e-test-scripts/cancel_job_delete_cluster.sh "$REGION_SMALL_TEST" "$CLUSTER_NAME_SMALL_TEST"
+    # Cancel the jobs running on the cluster and then delete the cluster. [Unbounded Read]
+    source cloudbuild/e2e-test-scripts/cancel_job_delete_cluster.sh "$REGION_UNBOUNDED_TABLE_TEST" "$CLUSTER_NAME_UNBOUNDED_TABLE_TEST"
     exit
     ;;
 
