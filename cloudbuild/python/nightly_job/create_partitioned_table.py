@@ -11,9 +11,9 @@ import threading
 from absl import app
 from google.cloud import bigquery
 
-sys.path.insert(0, os.path.abspath('../../../cloudbuild'))
+sys.path.insert(1, os.path.abspath('../utils'))
 print(sys.path)
-from cloudbuild.python.utils import table_type, utils
+import table_type, utils
 
 
 def create_partitioned_table(table_id):
