@@ -14,22 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+REGION=$1
+CLUSTER_NAME=$2
 set -euxo pipefail
-readonly STEP=$1
 
-cd /workspace
-
-case $STEP in
-
-  cancel_dataproc_jobs)
-   # 2. Cancel the second cluster jobs
-    python3 cloudbuild/e2e-test-scripts/cancel_job_delete_cluster.sh "$REGION_SMALL_TEST" "$CLUSTER_NAME_SMALL_TEST"
-    python3 cloudbuild/e2e-test-scripts/cancel_job_delete_cluster.sh "$REGION_UNBOUNDED_TABLE_TEST" "$CLUSTER_NAME_UNBOUNDED_TABLE_TEST"
-    exit
-    ;;
-
-  *)
-    echo "Unknown step $STEP"
-    exit 1
-    ;;
-esac
+# 1. Cancel the jobs running on the cluster.
+python3 cloudbuild/cancel-dataproc/python-scripts/cancel_dataproc_jobs.py -- --project_id="$PROJECT_ID" --cluster_name="$CLUSTER_NAME" --cluster_region_name="$REGION"
+# 2. Then delete the cluster.
+gcloud dataproc clusters delete "$CLUSTER_NAME" --region="$REGION" --quiet
