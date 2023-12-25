@@ -28,9 +28,3 @@ gcloud dataproc clusters create "$CLUSTER_NAME" \
     --properties="$PROPERTIES" \
     --num-masters=1 \
     --num-workers="$NUM_WORKERS"
-
-# Delete the cluster
-#-> This can be a part of the cancel job.
-#gcloud dataproc clusters delete "$CLUSTER_NAME" --region="$REGION" --quiet
-
-
