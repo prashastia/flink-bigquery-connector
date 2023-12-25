@@ -7,13 +7,8 @@ import datetime
 import threading
 import time
 from absl import app
-import sys
-import os
-parent_dir = os.path.dirname(os.path.realpath(__file__))
-grand_grand_parent_dir = os.path.dirname(os.path.dirname(parent_dir))
-sys.path.append(grand_grand_parent_dir)
 
-from cloudbuild.python.utils import table_type, utils
+from utils import table_type, utils
 
 
 def wait():

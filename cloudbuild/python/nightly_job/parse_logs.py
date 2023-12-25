@@ -29,13 +29,8 @@ from absl import app
 from google.cloud import bigquery
 from google.cloud import dataproc_v1
 from google.cloud import storage
-import sys
-import os
-parent_dir = os.path.dirname(os.path.realpath(__file__))
-grand_grand_parent_dir = os.path.dirname(os.path.dirname(parent_dir))
-sys.path.append(grand_grand_parent_dir)
 
-from cloudbuild.python.utils import utils
+from utils import utils
 
 
 def get_bq_query_result_row_count(client_project_name, query):

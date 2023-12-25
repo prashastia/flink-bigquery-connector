@@ -2,17 +2,12 @@
 
 Python script to create a BigQuery partitioned table.
 """
-import sys
-import os
 from collections.abc import Sequence
 import datetime
 import threading
 
 from absl import app
 from google.cloud import bigquery
-
-sys.path.insert(1, os.path.abspath('../utils'))
-print(sys.path)
 
 from utils import table_type, utils
 
