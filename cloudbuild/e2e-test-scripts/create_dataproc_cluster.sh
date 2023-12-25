@@ -8,6 +8,8 @@ REGION=$2
 ZONE=$3
 PROPERTIES=$4
 NUM_WORKERS=$5
+TEMP_BUCKET=$6
+STAGING_BUCKET=$7
 
 echo CLUSTER_NAME "$CLUSTER_NAME"
 echo REGION "$REGION"
@@ -27,4 +29,6 @@ gcloud dataproc clusters create "$CLUSTER_NAME" \
     --enable-component-gateway \
     --properties="$PROPERTIES" \
     --num-masters=1 \
-    --num-workers="$NUM_WORKERS"
+    --num-workers="$NUM_WORKERS" \
+    --bucket="$STAGING_BUCKET" \
+    --temp-bucket="$TEMP_BUCKET"
