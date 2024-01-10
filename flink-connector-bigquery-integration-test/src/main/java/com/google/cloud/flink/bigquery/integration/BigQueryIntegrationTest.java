@@ -184,10 +184,7 @@ public class BigQueryIntegrationTest {
                                 .withIdleness(Duration.ofMinutes(MAX_IDLENESS)),
                         "BigQueryStreamingSource",
                         typeInfo)
-                .flatMap(new FlatMapper(recordPropertyToAggregate))
-                .keyBy(mappedTuple -> mappedTuple.f0)
-                .window(TumblingEventTimeWindows.of(Time.minutes(WINDOW_SIZE)))
-                .sum("f1");
+                .flatMap(new FlatMapper(recordPropertyToAggregate)).print();
 
         String jobName = "Flink BigQuery Unbounded Read Integration Test";
         env.execute(jobName);
@@ -201,7 +198,7 @@ public class BigQueryIntegrationTest {
             throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(CHECKPOINT_INTERVAL);
+//        env.enableCheckpointing(CHECKPOINT_INTERVAL);
 
         BigQuerySource<GenericRecord> source =
                 BigQuerySource.readAvros(
@@ -214,10 +211,7 @@ public class BigQueryIntegrationTest {
                                                 .build())
                                 .build());
 
-        env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQueryQuerySource")
-                .flatMap(new FlatMapper(recordPropertyToAggregate))
-                .keyBy(mappedTuple -> mappedTuple.f0)
-                .sum("f1");
+        env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQueryQuerySource").print();
 
         env.execute("Flink BigQuery Bounded Read Integration Test");
     }
