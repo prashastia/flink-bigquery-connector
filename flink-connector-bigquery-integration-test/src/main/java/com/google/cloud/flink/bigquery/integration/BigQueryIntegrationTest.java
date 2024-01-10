@@ -19,6 +19,7 @@
 package com.google.cloud.flink.bigquery.integration;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -184,7 +185,11 @@ public class BigQueryIntegrationTest {
                                 .withIdleness(Duration.ofMinutes(MAX_IDLENESS)),
                         "BigQueryStreamingSource",
                         typeInfo)
-                .flatMap(new FlatMapper(recordPropertyToAggregate)).print();
+                .flatMap(new FlatMapper(recordPropertyToAggregate))
+                .keyBy(mappedTuple -> mappedTuple.f0)
+                .window(TumblingEventTimeWindows.of(Time.minutes(WINDOW_SIZE)))
+                .aggregate(new CustomAggregateFunction())
+                .print();
 
         String jobName = "Flink BigQuery Unbounded Read Integration Test";
         env.execute(jobName);
@@ -198,7 +203,7 @@ public class BigQueryIntegrationTest {
             throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//        env.enableCheckpointing(CHECKPOINT_INTERVAL);
+        env.enableCheckpointing(CHECKPOINT_INTERVAL);
 
         BigQuerySource<GenericRecord> source =
                 BigQuerySource.readAvros(
@@ -211,7 +216,10 @@ public class BigQueryIntegrationTest {
                                                 .build())
                                 .build());
 
-        env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQueryQuerySource").print();
+        env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQueryQuerySource")
+                .flatMap(new FlatMapper(recordPropertyToAggregate))
+                .keyBy(mappedTuple -> mappedTuple.f0)
+                .sum("f1");
 
         env.execute("Flink BigQuery Bounded Read Integration Test");
     }
@@ -245,11 +253,55 @@ public class BigQueryIntegrationTest {
                 recordPropertyForTimestamps);
     }
 
+    /** Class that accumulates the total number of records read. */
+    public static class CountAccumulator {
+
+        int numRecords;
+
+        CountAccumulator() {
+            this.numRecords = 0;
+        }
+
+        CountAccumulator(int numRecords) {
+            this.numRecords = numRecords;
+        }
+    }
+
+    static class CustomAggregateFunction
+            implements AggregateFunction<Tuple2<String, Integer>, CountAccumulator, Integer> {
+
+        @Override
+        public BigQueryIntegrationTest.CountAccumulator createAccumulator() {
+            return new CountAccumulator();
+        }
+
+        @Override
+        public BigQueryIntegrationTest.CountAccumulator add(
+                Tuple2<String, Integer> value,
+                BigQueryIntegrationTest.CountAccumulator accumulator) {
+            accumulator.numRecords += value.f1;
+            return accumulator;
+        }
+
+        @Override
+        public Integer getResult(BigQueryIntegrationTest.CountAccumulator accumulator) {
+            return accumulator.numRecords;
+        }
+
+        @Override
+        public BigQueryIntegrationTest.CountAccumulator merge(
+                BigQueryIntegrationTest.CountAccumulator a,
+                BigQueryIntegrationTest.CountAccumulator b) {
+            a.numRecords += b.numRecords;
+            return a;
+        }
+    }
+
     static class FlatMapper extends RichFlatMapFunction<GenericRecord, Tuple2<String, Integer>> {
 
         private final String recordPropertyToAggregate;
 
-        private transient Counter counter;
+        private static volatile Counter counter;
 
         @Override
         public void open(Configuration config) {
@@ -283,7 +335,7 @@ public class BigQueryIntegrationTest {
 
     static class Mapper extends RichMapFunction<GenericRecord, String> {
 
-        private transient Counter counter;
+        private static volatile Counter counter;
 
         @Override
         public void open(Configuration config) {
