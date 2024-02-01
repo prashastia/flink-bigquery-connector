@@ -64,7 +64,8 @@ under the License.
         <flink.parent.artifactId>flink-connector-bigquery-parent</flink.parent.artifactId>
     </properties>
 
-    <dependencies>
+	<dependencies>
+		<!-- Google BigQuery Client -->
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-bigquerystorage</artifactId>
@@ -135,7 +136,14 @@ under the License.
             <artifactId>log4j-core</artifactId>
             <scope>test</scope>
         </dependency>
-    </dependencies>
+
+		<!-- Google BigQuery Client -->
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-bigquery</artifactId>
+		</dependency>
+
+	</dependencies>
 
     <dependencyManagement>
         <dependencies>

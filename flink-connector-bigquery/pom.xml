@@ -24,7 +24,7 @@ under the License.
     <parent>
         <groupId>com.google.cloud.flink</groupId>
         <artifactId>flink-connector-bigquery-parent</artifactId>
-        <version>0.1.0-preview</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>flink-connector-bigquery</artifactId>
@@ -33,6 +33,7 @@ under the License.
     <packaging>jar</packaging>
 
     <dependencies>
+		<!-- All dependencies dependent on flink versions -->
         <!-- Core -->
         <dependency>
             <groupId>org.apache.flink</groupId>
@@ -40,42 +41,13 @@ under the License.
             <version>${flink.version}</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-streaming-java</artifactId>
             <version>${flink.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Additional Flink Modules -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-avro</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-metrics-dropwizard</artifactId>
-        </dependency>
-        
-        <!-- Google BigQuery Storage Client -->
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-bigquerystorage</artifactId>
-        </dependency>
-
-        <!-- Google BigQuery Client -->
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-bigquery</artifactId>
-        </dependency>
-        
-        <!-- Utilities -->
-        <dependency>
-            <groupId>dev.failsafe</groupId>
-            <artifactId>failsafe</artifactId>
-        </dependency>
-                
-        <!-- Table ecosystem -->
 
         <!-- Projects depending on this project won't depend on flink-table-*. -->
         <dependency>
@@ -86,11 +58,59 @@ under the License.
             <optional>true</optional>
         </dependency>
 
-        <!-- Tests -->
+		<!-- Flink dependencies -->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-avro</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
 
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-metrics-dropwizard</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-test-utils-junit</artifactId>
+			<version>${flink.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-shaded-force-shading</artifactId>
+			<version>${flink.shaded.version}</version>
+		</dependency>
+
+		<!-- Flink ArchUnit -->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-architecture-tests-base</artifactId>
+			<version>${flink.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-architecture-tests-test</artifactId>
+			<version>${flink.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-architecture-tests-production</artifactId>
+			<version>${flink.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+        <!-- Tests -->
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-test-utils</artifactId>
+			<version>${flink.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -147,14 +167,6 @@ under the License.
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
-        <!-- ArchUit test dependencies -->
-
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-architecture-tests-test</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -167,7 +179,18 @@ under the License.
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<inherited>false</inherited>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.flink</groupId>
+						<artifactId>flink-ci-tools</artifactId>
+						<version>${flink.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
         </plugins>
     </build>
-
 </project>
