@@ -23,7 +23,7 @@ cd /workspace
 case $STEP in
   # Download maven and all the dependencies
   init)
-    $MVN clean install -DskipTests
+    $MVN clean install -DskipTests -Pflink_1.17.1
     gcloud storage cp "$MVN_JAR_LOCATION" "$GCS_JAR_LOCATION"
     exit
     ;;
