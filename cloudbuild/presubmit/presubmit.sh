@@ -35,7 +35,7 @@ case $STEP in
 
   # Run unit & integration tests
   tests)
-    $MVN clean clover:setup verify clover:aggregate clover:clover -Pflink_1.17.1
+    $MVN clean clover:setup verify clover:aggregate clover:clover clover:check -Pclover_flink_1.17.1
     ;;
 
   *)
