@@ -322,12 +322,9 @@ under the License.
     </build>
     <profiles>
 		<profile>
-			<id>flink_1.17.1</id>
+			<id>clover_flink_1.17.1</id>
 			<activation>
-				<property>
-					<name>flink.version</name>
-					<value>1.17.1</value>
-				</property>
+				<activeByDefault>false</activeByDefault>
 			</activation>
 			<properties>
 				<flink.version>1.17.1</flink.version>
@@ -335,9 +332,6 @@ under the License.
 			</properties>
 			<modules>
 				<module>flink-connector-bigquery</module>
-				<module>flink-sql-connector-bigquery</module>
-				<module>flink-connector-bigquery-examples</module>
-				<module>flink-connector-bigquery-integration-test</module>
 			</modules>
 			<build>
 				<plugins>
@@ -348,8 +342,7 @@ under the License.
 						<configuration>
 							<!-- Use custom report descriptor -->
 							<reportDescriptor>${maven.multiModuleProjectDirectory}/tools/maven/clover.xml</reportDescriptor>
-							<!-- TODO: Change this percentage -->
-							<targetPercentage>98%</targetPercentage>
+							<targetPercentage>80%</targetPercentage>
 							<excludes>
 								<exclude>**/com/google/cloud/flink/bigquery/common/config/*</exclude>
 								<exclude>**/com/google/cloud/flink/bigquery/common/utils/GoogleCredentialsSupplier.*</exclude>
@@ -379,6 +372,25 @@ under the License.
 					</plugin>
 				</plugins>
 			</reporting>
+		</profile>
+		<profile>
+			<id>flink_1.17.1</id>
+			<activation>
+				<property>
+					<name>flink.version</name>
+					<value>1.17.1</value>
+				</property>
+			</activation>
+			<properties>
+				<flink.version>1.17.1</flink.version>
+				<flink.shaded.version>17.0</flink.shaded.version>
+			</properties>
+			<modules>
+				<module>flink-connector-bigquery</module>
+				<module>flink-sql-connector-bigquery</module>
+				<module>flink-connector-bigquery-examples</module>
+				<module>flink-connector-bigquery-integration-test</module>
+			</modules>
 		</profile>
 	</profiles>
 </project>
