@@ -33,6 +33,7 @@ under the License.
 
     <properties>
         <japicmp.skip>true</japicmp.skip>
+		<flink.version>1.17.1</flink.version>
     </properties>
 
     <dependencies>
@@ -76,11 +77,7 @@ under the License.
                         <configuration>
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <resources>
-                                <resource>
-                                    <directory>src/test/resources</directory>
-                                </resource>
-                            </resources>
+
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.google.cloud.flink.bigquery.integration.BigQueryIntegrationTest</mainClass>
