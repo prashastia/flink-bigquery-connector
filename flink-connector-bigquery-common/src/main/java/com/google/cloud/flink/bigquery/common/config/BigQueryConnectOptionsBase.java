@@ -18,7 +18,6 @@ package com.google.cloud.flink.bigquery.common.config;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.serializable.SerializableAutoValue;
-import com.google.cloud.flink.bigquery.services.BigQueryServices;
 
 import javax.annotation.Nullable;
 

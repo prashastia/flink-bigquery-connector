@@ -18,14 +18,13 @@ package com.google.cloud.flink.bigquery.common.utils;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.util.Preconditions;
-import org.apache.commons.lang3.StringUtils;
 
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.flink.bigquery.services.PartitionIdWithInfo;
 import com.google.cloud.flink.bigquery.services.PartitionIdWithInfoAndStatus;
 import com.google.cloud.flink.bigquery.services.TablePartitionInfo;
-
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -441,9 +440,7 @@ public class BigQueryPartitionUtilsBase {
                 }
             case INT_RANGE:
                 return new PartitionIdWithInfoAndStatus(
-                        partition.getPartitionId(),
-                        partition.getInfo(),
-                        PartitionStatus.COMPLETED);
+                        partition.getPartitionId(), partition.getInfo(), PartitionStatus.COMPLETED);
             default:
                 throw new IllegalArgumentException(
                         "Partition type not supported: " + partition.getInfo().getPartitionType());

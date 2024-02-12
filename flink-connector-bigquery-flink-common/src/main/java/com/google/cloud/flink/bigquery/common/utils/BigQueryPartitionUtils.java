@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 
 /** Utility class to handle the BigQuery partition conversions to Flink types and structures. */
 @Internal
-public class BigQueryPartitionUtils {
+public class BigQueryPartitionUtils extends BigQueryPartitionUtilsBase {
 
     /**
      * Below durations are added to current partitionId to obtain the next tentative partitionId,

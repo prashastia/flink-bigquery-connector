@@ -53,7 +53,8 @@ public interface BigQueryServices extends Serializable {
      * @return a storage read client object.
      * @throws IOException
      */
-    StorageReadClient getStorageClient(CredentialsOptionsBase credentialsOptions) throws IOException;
+    StorageReadClient getStorageClient(CredentialsOptionsBase credentialsOptions)
+            throws IOException;
 
     /**
      * Container for reading data from streaming endpoints.

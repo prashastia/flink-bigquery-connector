@@ -16,7 +16,6 @@
 
 package com.google.cloud.flink.bigquery.common.config;
 
-
 import com.google.auth.Credentials;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.flink.bigquery.common.utils.GoogleCredentialsSupplierBase;
