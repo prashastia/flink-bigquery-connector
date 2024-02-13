@@ -29,7 +29,7 @@ under the License.
 
     <groupId>com.google.cloud.flink</groupId>
     <artifactId>flink-connector-bigquery-parent</artifactId>
-    <version>0.1.0-preview</version>
+    <version>${revision}</version>
 
     <name>Flink : Connectors : Google BigQuery Parent</name>
     <packaging>pom</packaging>
@@ -46,9 +46,7 @@ under the License.
 
     <properties>
         <google-lib-bom.version>26.16.0</google-lib-bom.version>
-
-        <flink.version>1.17.1</flink.version>
-        <flink.shaded.version>17.0</flink.shaded.version>
+		<revision>0.1.0-preview</revision>
 
         <junit5.version>5.9.3</junit5.version>
         <google-truth.version>1.1.4</google-truth.version>
@@ -65,30 +63,12 @@ under the License.
         <surefire.report.dir>${maven.multiModuleProjectDirectory}/target/test-report</surefire.report.dir>
     </properties>
 
-    <modules>
-        <module>flink-connector-bigquery</module>
-        <module>flink-sql-connector-bigquery</module>
-        <module>flink-connector-bigquery-examples</module>
-        <module>flink-connector-bigquery-integration-test</module>
-    </modules>
-
     <dependencies>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-bigquerystorage</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-avro</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-metrics-dropwizard</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-shaded-force-shading</artifactId>
-        </dependency>
+
 
         <!-- Root dependencies for all projects -->
         <dependency>
@@ -157,30 +137,12 @@ under the License.
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-test-utils-junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- ArchUit test dependencies -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-architecture-tests-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-architecture-tests-production</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <dependencyManagement>
         <dependencies>
 
             <!-- Google libraries BOM -->
-
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
@@ -194,62 +156,6 @@ under the License.
                 <groupId>dev.failsafe</groupId>
                 <artifactId>failsafe</artifactId>
                 <version>3.3.2</version>
-            </dependency>
-
-            <!-- Flink dependencies -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-avro</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-metrics-dropwizard</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-test-utils</artifactId>
-                <version>${flink.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-test-utils-junit</artifactId>
-                <version>${flink.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-shaded-force-shading</artifactId>
-                <version>${flink.shaded.version}</version>
-            </dependency>
-
-            <!-- Flink ArchUnit -->
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-architecture-tests-base</artifactId>
-                <version>${flink.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-architecture-tests-test</artifactId>
-                <version>${flink.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-architecture-tests-production</artifactId>
-                <version>${flink.version}</version>
-                <scope>test</scope>
             </dependency>
 
             <!-- This manages the 'javax.annotation' annotations (JSR305) -->
@@ -344,19 +250,6 @@ under the License.
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.flink</groupId>
-                        <artifactId>flink-ci-tools</artifactId>
-                        <version>${flink.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
             </plugin>
@@ -383,11 +276,13 @@ under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+
             </plugin>
 
             <plugin>
@@ -436,6 +331,7 @@ under the License.
                             <targetPercentage>60%</targetPercentage>
                             <excludes>
                                 <exclude>**/com/google/cloud/flink/bigquery/common/config/*</exclude>
+								<exclude>**/com/google/cloud/flink/bigquery/common/exceptions/*</exclude>
                                 <exclude>**/com/google/cloud/flink/bigquery/common/utils/GoogleCredentialsSupplier.*</exclude>
                                 <exclude>**/com/google/cloud/flink/bigquery/services/**Impl.*</exclude>
                                 <exclude>**/com/google/cloud/flink/bigquery/source/config/*</exclude>
@@ -464,5 +360,35 @@ under the License.
                 </plugins>
             </reporting>
         </profile>
+		<profile>
+			<id>flink_1.17</id>
+			<properties>
+				<flink.version>1.17.1</flink.version>
+				<flink.shaded.version>17.0</flink.shaded.version>
+			</properties>
+			<modules>
+					<module>flink-bigquery-connector-flink-1.17-parent</module>
+					<module>flink-connector-bigquery-examples/flink-connector-bigquery-example-flink-1.17</module>
+					<!-- TODO: Add the Integeration Test submodule for 1.17 Here -->
+					<!-- <module>flink-connector-bigquery-integration-test</module>-->
+				<!-- TODO: Check its status. -->
+				<!--					<module>flink-sql-connector-bigquery</module>-->
+			</modules>
+		</profile>
+
+		<profile>
+			<id>all</id>
+			<properties>
+				<flink.version>1.17.1</flink.version>
+				<flink.shaded.version>17.0</flink.shaded.version>
+			</properties>
+			<modules>
+				<module>flink-connector-bigquery-flink-common</module>
+				<module>flink-connector-bigquery-flink-1.17</module>
+				<!-- Add any other future modules here. Do not add Integration and Examples. -->
+
+			</modules>
+		</profile>
+
     </profiles>
 </project>
