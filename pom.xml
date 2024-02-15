@@ -59,17 +59,21 @@ under the License.
         <slf4j.version>1.7.36</slf4j.version>
         <log4j.version>2.17.2</log4j.version>
 
+		<!--TODO: Please Remove THIS -->
+		<flink.version>1.17.1</flink.version>
+		<flink.shaded.version>17.0</flink.shaded.version>
+
         <flink.parent.artifactId>flink-connector-bigquery-parent</flink.parent.artifactId>
         <surefire.report.dir>${maven.multiModuleProjectDirectory}/target/test-report</surefire.report.dir>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-bigquerystorage</artifactId>
-        </dependency>
+	<modules>
+		<module>flink-connector-bigquery-common</module>
+		<!--TODO: Please Remove THIS -->
+		<module>flink-connector-bigquery-flink-1.17</module>
+	</modules>
 
-
+	<dependencies>
         <!-- Root dependencies for all projects -->
         <dependency>
             <groupId>dev.failsafe</groupId>

@@ -34,7 +34,7 @@ import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.RowType;
 
 import com.google.cloud.flink.bigquery.common.config.BigQueryConnectOptions;
-import com.google.cloud.flink.bigquery.common.utils.BigQueryPartitionUtils;
+import com.google.cloud.flink.bigquery.common.utils.BigQueryPartitionUtilsBase;
 import com.google.cloud.flink.bigquery.services.BigQueryServices;
 import com.google.cloud.flink.bigquery.services.BigQueryServicesFactory;
 import com.google.cloud.flink.bigquery.services.TablePartitionInfo;
@@ -242,7 +242,7 @@ public class BigQueryDynamicTableSource
          * we retrieve the existing partition ids and transform them into valid values given the
          * column data type
          */
-        return BigQueryPartitionUtils.partitionValuesFromIdAndDataType(
+        return BigQueryPartitionUtilsBase.partitionValuesFromIdAndDataType(
                         dataClient.retrieveTablePartitions(projectId, dataset, table),
                         partitionInfo.getColumnType())
                 .stream()
@@ -272,7 +272,7 @@ public class BigQueryDynamicTableSource
                         .flatMap(map -> map.entrySet().stream())
                         .map(
                                 entry ->
-                                        BigQueryPartitionUtils
+                                        BigQueryPartitionUtilsBase
                                                 .formatPartitionRestrictionBasedOnInfo(
                                                         partitionInfo,
                                                         entry.getKey(),

@@ -215,7 +215,7 @@ public class StorageClientFaker {
 
         /** Implementation of the server stream for testing purposes. */
         public static class FakeBigQueryServerStream
-                implements BigQueryServerStream<ReadRowsResponse> {
+                implements BigQueryServices.BigQueryServerStream<ReadRowsResponse> {
 
             private final List<ReadRowsResponse> toReturn;
             private final Double errorPercentage;
@@ -535,7 +535,7 @@ public class StorageClientFaker {
                                 .setTestingBigQueryServices(
                                         () -> {
                                             return FakeBigQueryServices.getInstance(
-                                                    new FakeBigQueryServices
+                                                    new StorageClientFaker.FakeBigQueryServices
                                                             .FakeBigQueryStorageReadClient(
                                                             StorageClientFaker.fakeReadSession(
                                                                     expectedRowCount,

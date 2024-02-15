@@ -25,7 +25,7 @@ import org.apache.flink.table.factories.FactoryUtil;
 import org.apache.flink.table.factories.utils.FactoryMocks;
 
 import com.google.cloud.flink.bigquery.common.config.BigQueryConnectOptions;
-import com.google.cloud.flink.bigquery.common.config.CredentialsOptions;
+import com.google.cloud.flink.bigquery.common.config.CredentialsOptionsBase;
 import com.google.cloud.flink.bigquery.source.config.BigQueryReadOptions;
 import com.google.cloud.flink.bigquery.table.config.BigQueryConnectorOptions;
 import org.assertj.core.api.Assertions;
@@ -139,7 +139,7 @@ public class BigQueryDynamicTableFactoryTest {
                                 .setDataset("dataset")
                                 .setProjectId("project")
                                 .setTable("table")
-                                .setCredentialsOptions(CredentialsOptions.builder().build())
+                                .setCredentialsOptions(CredentialsOptionsBase.builder().build())
                                 .build())
                 .build();
     }
