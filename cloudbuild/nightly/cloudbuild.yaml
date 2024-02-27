@@ -12,6 +12,7 @@ steps:
     args: ['/workspace/cloudbuild/nightly/nightly.sh', 'init']
     env:
       - 'GCS_JAR_LOCATION=${_GCS_JAR_LOCATION}'
+      - 'GCS_JAR_NAME=${_GCS_JAR_NAME}'
       - 'GCS_JAR_LOCATION_FILE=${_GCS_JAR_LOCATION_FILE}'
       - 'MVN_JAR_LOCATION=${_MVN_JAR_LOCATION}'
 
