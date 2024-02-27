@@ -74,8 +74,8 @@ case $STEP in
   init)
     timestamp=$(date +"%Y%m%d%H%M%S")
     $MVN clean install -DskipTests
-    gcloud storage cp "$MVN_JAR_LOCATION" "$GCS_JAR_LOCATION"/timestamp
-    echo "$GCS_JAR_LOCATION"/timestamp > "$GCS_JAR_LOCATION_FILE"
+    gcloud storage cp "$MVN_JAR_LOCATION" "$GCS_JAR_LOCATION"/"$timestamp"
+    echo "$GCS_JAR_LOCATION"/"$timestamp" > "$GCS_JAR_LOCATION_FILE"
     exit
     ;;
 
