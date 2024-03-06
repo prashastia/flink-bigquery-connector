@@ -6,7 +6,6 @@ import com.google.cloud.bigquery.storage.v1.TableSchema;
 import com.google.cloud.flink.bigquery.common.utils.SchemaTransform;
 import com.google.cloud.flink.bigquery.services.BigQueryUtils;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.Descriptors;
@@ -24,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -194,7 +194,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
      * @param schema An Avro Schema
      * @return Returns the TableSchema created from the provided Schema
      */
-    private static TableSchema getProtoSchemaFromAvroSchema(Schema schema) {
+    public static TableSchema getProtoSchemaFromAvroSchema(Schema schema) {
         // Iterate over each table fields and add them to schema.
         Preconditions.checkState(!schema.getFields().isEmpty());
 
@@ -250,22 +250,41 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
                 builder = builder.setMode(TableFieldSchema.Mode.REPEATED);
                 break;
             case MAP:
+                //                Schema keyType = Schema.create(Schema.Type.STRING);
+                //                Schema valueType = schema.getElementType();
+                //                if (valueType == null) {
+                //                    throw new IllegalArgumentException("Unexpected null element
+                // type!");
+                //                }
+                //                TableFieldSchema keyFieldSchema =
+                //                        getTableFieldFromAvroField(
+                //                                new Schema.Field(
+                //                                        "key", keyType, " Map entry key",
+                // Schema.Field.NULL_VALUE));
+                //                TableFieldSchema valueFieldSchema =
+                //                        getTableFieldFromAvroField(
+                //                                new Schema.Field(
+                //                                        "value",
+                //                                        valueType,
+                //                                        "Map entry value",
+                //                                        Schema.Field.NULL_VALUE));
+                //                builder =
+                //                        builder.setType(TableFieldSchema.Type.STRUCT)
+                //                                .addFields(keyFieldSchema)
+                //                                .addFields(valueFieldSchema)
+                //                                .setMode(TableFieldSchema.Mode.REPEATED);
+
                 Schema keyType = Schema.create(Schema.Type.STRING);
-                Schema valueType = schema.getElementType();
+                Schema valueType = TypeWithNullability.create(schema.getValueType()).getType();
                 if (valueType == null) {
-                    throw new IllegalArgumentException("Unexpected null element type!");
+                    throw new RuntimeException("Unexpected null element type!");
                 }
                 TableFieldSchema keyFieldSchema =
                         getTableFieldFromAvroField(
-                                new Schema.Field(
-                                        "key", keyType, " Map entry key", Schema.Field.NULL_VALUE));
+                                new Schema.Field("key", keyType, "key of the map entry"));
                 TableFieldSchema valueFieldSchema =
                         getTableFieldFromAvroField(
-                                new Schema.Field(
-                                        "value",
-                                        valueType,
-                                        "Map entry value",
-                                        Schema.Field.NULL_VALUE));
+                                new Schema.Field("value", valueType, "value of the map entry"));
                 builder =
                         builder.setType(TableFieldSchema.Type.STRUCT)
                                 .addFields(keyFieldSchema)
@@ -321,6 +340,59 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
         return builder.build();
     }
 
+    /** javadpc. */
+    public static class TypeWithNullability {
+        public final org.apache.avro.Schema type;
+        public final boolean nullable;
+
+        public static TypeWithNullability create(org.apache.avro.Schema avroSchema) {
+            return new TypeWithNullability(avroSchema);
+        }
+
+        TypeWithNullability(org.apache.avro.Schema avroSchema) {
+            if (avroSchema.getType() == Schema.Type.UNION) {
+                List<org.apache.avro.Schema> types = avroSchema.getTypes();
+
+                // optional fields in AVRO have form of:
+                // {"name": "foo", "type": ["null", "something"]}
+
+                // don't need recursion because nested unions aren't supported in AVRO
+                // Extract all the nonNull Datatypes.
+                List<org.apache.avro.Schema> nonNullTypes =
+                        types.stream()
+                                .filter(x -> x.getType() != Schema.Type.NULL)
+                                .collect(Collectors.toList());
+
+                if (nonNullTypes.size() == types.size() || nonNullTypes.isEmpty()) {
+                    // union without `null` or all 'null' union, keep as is.
+                    // If all the allowed fields types are null/not null
+                    // Keep the type as it is.
+                    type = avroSchema;
+                    nullable = false;
+                } else if (nonNullTypes.size() > 1) {
+                    //
+                    type = org.apache.avro.Schema.createUnion(nonNullTypes);
+                    nullable = true;
+                } else {
+                    // One non-null type.
+                    type = nonNullTypes.get(0);
+                    nullable = true;
+                }
+            } else {
+                type = avroSchema;
+                nullable = false;
+            }
+        }
+
+        public Boolean isNullable() {
+            return nullable;
+        }
+
+        public org.apache.avro.Schema getType() {
+            return type;
+        }
+    }
+
     /**
      * Helper function to handle the UNION Schema Type. We only consider the union schema valid when
      * it is of the form ["null", datatype]. All other forms such as ["null"],["null", datatype1,
@@ -360,7 +432,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
      * @param tableFieldSchemas List of Table Schema Fields for which descriptor is needed.
      * @return DescriptorProto describing the Schema.
      */
-    private static DescriptorProto descriptorSchemaFromTableFieldSchemas(
+    public static DescriptorProto descriptorSchemaFromTableFieldSchemas(
             Iterable<TableFieldSchema> tableFieldSchemas) {
         DescriptorProto.Builder descriptorBuilder = DescriptorProto.newBuilder();
         // Create a unique name for the descriptor ('-' characters cannot be used).
@@ -434,7 +506,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
 
     private final DescriptorProto descriptorProto;
 
-    public void fieldDescriptorFromSchemaField(
+    public static void fieldDescriptorFromSchemaField(
             Schema.Field field, int fieldNumber, DescriptorProto.Builder descriptorProtoBuilder) {
 
         System.out.println("In [fieldDescriptorFromSchemaField] ");
@@ -446,6 +518,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
         FieldDescriptorProto.Builder fieldDescriptorBuilder = FieldDescriptorProto.newBuilder();
         fieldDescriptorBuilder = fieldDescriptorBuilder.setName(field.name().toLowerCase());
         fieldDescriptorBuilder = fieldDescriptorBuilder.setNumber(fieldNumber);
+        System.out.println("descriptorProtoBuilder " + descriptorProtoBuilder);
 
         Schema elementType = schema;
         boolean isNullable = false;
@@ -485,7 +558,40 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
                 descriptorProtoBuilder.addAllNestedType(arrayFieldBuilder.getNestedTypeList());
                 break;
             case MAP:
-                throw new UnsupportedOperationException("Operation is not supported yet.");
+                System.out.println("In MAP");
+                // Map is converted to an array of structs.
+                Schema keyType = Schema.create(Schema.Type.STRING);
+                Schema valueType = elementType.getValueType();
+                if (valueType == null) {
+                    throw new RuntimeException("Unexpected null element type!");
+                }
+
+                Schema.Field valueField =
+                        new Schema.Field("value", valueType, "value of the map entry");
+                Schema.Field keyField = new Schema.Field("key", keyType, "key of the map entry");
+                Schema mapFieldSchema =
+                        Schema.createRecord(
+                                schema.getName(),
+                                schema.getDoc(),
+                                "com.google.flink.bigquery",
+                                true,
+                                Arrays.asList(keyField, valueField));
+
+                DescriptorProto.Builder mapFieldBuilder = DescriptorProto.newBuilder();
+                fieldDescriptorFromSchemaField(
+                        new Schema.Field(
+                                field.name(), mapFieldSchema, field.doc(), field.defaultVal()),
+                        fieldNumber,
+                        mapFieldBuilder);
+                System.out.println("mapFieldBuilder " + mapFieldBuilder);
+                fieldDescriptorBuilder =
+                        mapFieldBuilder
+                                .getFieldBuilder(0)
+                                .setLabel(FieldDescriptorProto.Label.LABEL_REPEATED);
+
+                // Add this nested types.
+                descriptorProtoBuilder.addAllNestedType(mapFieldBuilder.getNestedTypeList());
+                break;
             case UNION:
                 System.out.println("In UNION");
                 // Types can be ["null"] - Not supported in BigQuery.
@@ -542,7 +648,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
         descriptorProtoBuilder.addField(fieldDescriptorBuilder.build());
     }
 
-    public DescriptorProto getDescriptorSchemaFromAvroSchema(Schema schema) {
+    public static DescriptorProto getDescriptorSchemaFromAvroSchema(Schema schema) {
         // Iterate over each table fields and add them to schema.
         Preconditions.checkState(!schema.getFields().isEmpty());
 
@@ -566,7 +672,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer {
     public AvroToProtoSerializer(com.google.api.services.bigquery.model.TableSchema tableSchema) {
         Schema avroSchema = getAvroSchema(tableSchema);
         System.out.println("avroSchema\n" + avroSchema);
-        //        TableSchema protoTableSchema = getProtoSchemaFromAvroSchema(avroSchema);
+        //                TableSchema protoTableSchema = getProtoSchemaFromAvroSchema(avroSchema);
 
         //        System.out.println("Method 1...");
         //        descriptorProto =

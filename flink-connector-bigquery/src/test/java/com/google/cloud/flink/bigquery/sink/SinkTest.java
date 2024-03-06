@@ -1,10 +1,5 @@
 package com.google.cloud.flink.bigquery.sink;
 
-import org.apache.avro.Schema;
-
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.storage.v1.AppendRowsResponse;
@@ -16,16 +11,14 @@ import com.google.cloud.flink.bigquery.common.config.CredentialsOptions;
 import com.google.cloud.flink.bigquery.services.BigQueryServices;
 import com.google.cloud.flink.bigquery.services.BigQueryServicesFactory;
 import com.google.cloud.flink.bigquery.sink.serializer.AvroToProtoSerializer;
-import com.google.cloud.flink.bigquery.source.BigQuerySource;
 import com.google.cloud.flink.bigquery.source.config.BigQueryReadOptions;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /** Javadoc. */
@@ -48,12 +41,42 @@ public class SinkTest {
                     //                    + "   {\"name\" : \"sample_field_5\", \"type\" :
                     // [\"null\", \"string\", \"long\"]}\n"
                     + " ]\n";
+
+    private static String record2 =
+            "{\"type\": \"record\","
+                    + "\"name\": \"LongList2\","
+                    + " \"fields\" : ["
+                    + "{\"name\": \"value2\", \"type\": \"long\"},\n"
+                    + "{\"name\": \"next2\", \"type\": \"string\"}"
+                    + // optional next element
+                    "]}";
+    private static String record =
+            "{\"type\": \"record\","
+                    + "\"name\": \"LongList\","
+                    + " \"fields\" : ["
+                    + "{\"name\": \"value\", \"type\": \"long\"},\n"
+                    + "{\"name\": \"next\", \"type\":"
+                    + record2
+                    + "}"
+                    + // optional next element
+                    "]}";
+
+    public static final String MAP_AVRO_SCHEMA_FIELDS_STRING =
+            " \"fields\": [\n"
+                    //                    + "   {\"name\": \"name\", \"type\": \"string\"},\n"
+                    //                    + "   {\"name\": \"number\", \"type\": \"long\"},\n"
+                    //                    + "   {\"name\": \"map_field\", \"type\":
+                    // [\"null\",{\"type\": \"map\",\"values\": \"long\"}]},\n"
+                    + "   {\"name\": \"record_field\", \"type\": [\"null\","
+                    + record
+                    + "]}\n"
+                    + " ]\n";
     public static final String SIMPLE_AVRO_SCHEMA_STRING =
             "{\"namespace\": \"project.dataset\",\n"
                     + " \"type\": \"record\",\n"
                     + " \"name\": \"table\",\n"
                     + " \"doc\": \"Translated Avro Schema for project.dataset.table\",\n"
-                    + SIMPLE_AVRO_SCHEMA_FIELDS_STRING
+                    + MAP_AVRO_SCHEMA_FIELDS_STRING
                     + "}";
 
     BigQueryReadOptions readOptions =
@@ -86,28 +109,57 @@ public class SinkTest {
 
     public SinkTest() throws IOException {}
 
-    //    @Test
-    //    public void checkSchemaConversionForUnion() {
+    //        @Test
+    //        public void checkSchemaConversionForUnion() {
     //
-    //        //        System.out.println(SIMPLE_AVRO_SCHEMA_STRING.charAt());
-    //        System.out.println("@prashastia >>> ");
-    //        System.out.println("here 0");
+    //            //        System.out.println(SIMPLE_AVRO_SCHEMA_STRING.charAt());
+    //            System.out.println("@prashastia >>> ");
+    //            System.out.println("here 0");
     //
-    //        org.apache.avro.Schema simpleAvroSchema =
-    //                new org.apache.avro.Schema.Parser().parse(SIMPLE_AVRO_SCHEMA_STRING);
+    //            org.apache.avro.Schema simpleAvroSchema =
+    //                    new org.apache.avro.Schema.Parser().parse(SIMPLE_AVRO_SCHEMA_STRING);
     //
-    //        System.out.println("@prashastia >>> ");
-    //        System.out.println("here 1");
+    //            System.out.println("@prashastia >>> ");
+    //            System.out.println("here 1");
     //
-    //        TableSchema convertedTableSchema =
-    //                SerialiseAvroRecordsToStorageApiProtos.getProtoSchemaFromAvroSchema(
-    //                        simpleAvroSchema);
+    //            TableSchema convertedTableSchema =
+    //                    SerialiseAvroRecordsToStorageApiProtos.getProtoSchemaFromAvroSchema(
+    //                            simpleAvroSchema);
     //
-    //        System.out.println("@prashastia >>> ");
-    //        System.out.println(convertedTableSchema.toString());
+    //            System.out.println("@prashastia >>> ");
+    //            System.out.println(convertedTableSchema.toString());
     //
     //
-    //    }
+    //        }
+
+    @Test
+    public void checkSchemaConversionForUnion() {
+
+        //        System.out.println(SIMPLE_AVRO_SCHEMA_STRING.charAt());
+        System.out.println("@prashastia >>> ");
+        System.out.println("here 0");
+
+        org.apache.avro.Schema simpleAvroSchema =
+                new org.apache.avro.Schema.Parser().parse(SIMPLE_AVRO_SCHEMA_STRING);
+
+        System.out.println("@prashastia >>> ");
+        System.out.println("Method 1");
+        DescriptorProtos.DescriptorProto descriptorProto =
+                AvroToProtoSerializer.getDescriptorSchemaFromAvroSchema(simpleAvroSchema);
+        System.out.println(descriptorProto.toString());
+        //
+        System.out.println("Method 2");
+        com.google.cloud.bigquery.storage.v1.TableSchema protoTableSchema =
+                AvroToProtoSerializer.getProtoSchemaFromAvroSchema(simpleAvroSchema);
+        System.out.println(
+                "TableSchema [com.google.cloud.bigquery.storage.v1.TableSchema] "
+                        + protoTableSchema);
+
+        DescriptorProtos.DescriptorProto descriptorProto2 =
+                AvroToProtoSerializer.descriptorSchemaFromTableFieldSchemas(
+                        protoTableSchema.getFieldsList());
+        System.out.println(descriptorProto2.toString());
+    }
 
     //    private com.google.api.services.bigquery.model.TableSchema getTableSchema() throws
     // IOException {
@@ -127,18 +179,20 @@ public class SinkTest {
     //
 
     private List<GenericRecord> readRows() throws Exception {
-//        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//        System.out.println("env formed");
-//        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(readOptions);
-//        System.out.println("source formed");
-//        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQuerySource")
-//                .executeAndCollect(100);
-        String schema = "{ \"type\": \"record\", \"name\": \"MySchema\", \"namespace\": \"com.company\", \"fields\": [{\"name\": \"name\", \"type\": {\"type\": \"enum\", \"name\": \"Color\", \"symbols\": [\"UNKNOWN\", \"Prashasti\", \"Agarwal\"],\"default\": \"UNKNOWN\"}}]}";
+        //        final StreamExecutionEnvironment env =
+        // StreamExecutionEnvironment.getExecutionEnvironment();
+        //        System.out.println("env formed");
+        //        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(readOptions);
+        //        System.out.println("source formed");
+        //        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQuerySource")
+        //                .executeAndCollect(100);
+        String schema =
+                "{ \"type\": \"record\", \"name\": \"MySchema\", \"namespace\": \"com.company\", \"fields\": [{\"name\": \"name\", \"type\": {\"type\": \"enum\", \"name\": \"Color\", \"symbols\": [\"UNKNOWN\", \"Prashasti\", \"Agarwal\"],\"default\": \"UNKNOWN\"}}]}";
         Schema enumSchema = Schema.parse(schema);
-      return null;
+        return null;
     }
 
-    @Test
+    //    @Test
     public void checkSerialisation() throws Exception {
         // Create the write stream.
         // write using the Storage Write API.
