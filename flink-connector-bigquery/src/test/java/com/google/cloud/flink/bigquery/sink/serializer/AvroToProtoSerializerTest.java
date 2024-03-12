@@ -485,7 +485,6 @@ public class AvroToProtoSerializerTest {
     }
 
     @Test
-    public void testAllUnionPrimitiveSchemaConversion() throws DescriptorValidationException {
     public void testAllUnionOfPrimitiveSchemaConversion() throws DescriptorValidationException {
 
         String fieldString =
@@ -622,7 +621,7 @@ public class AvroToProtoSerializerTest {
     }
 
     @Test
-    public void testUnionofMapSchemaConversion() {
+    public void testUnionOfMapSchemaConversion() {
         String fieldString =
                 " \"fields\": [\n"
                         + "   {\"name\": \"map_field_union\", \"type\": [\"null\", {\"type\": \"map\", \"values\": \"long\"}]}\n"

@@ -392,29 +392,42 @@ public class AvroToProtoSerializerITCase {
 
     @Test
     public void testTimeSchemaMicroSecondsInsertion() throws Exception {
-
+        String tableId = "time";
         String fieldString =
                 " \"fields\": [\n"
                         + "   {\"name\": \"time\", \"type\": {\"type\": \"long\", \"logicalType\": \"time-micros\"}}\n"
                         + " ]\n";
 
         Schema avroSchema = getAvroSchemaFromFieldString(fieldString);
-        GenericRecord record = StorageClientFaker.createRecord(avroSchema);
-        // Get Time in microsecond precision.
-        LocalDateTime time = LocalDateTime.now();
-        // convert to timestamp and add the microseconds
-        // NOTE: FLAKY TEST.
-        long timestamp =
-                TimeUnit.MILLISECONDS.toMicros(
-                        time.toInstant(ZoneOffset.ofHoursMinutes(5, 30)).toEpochMilli());
-        timestamp += (time.getNano() % 1000000) / 1000;
-        record.put("time", timestamp);
-
-        System.out.println("Record write: [" + record + "]");
         BigQueryProtoSerializer<GenericRecord> serializer = new AvroToProtoSerializer(avroSchema);
         ProtoRows.Builder protoRowsBuilder = ProtoRows.newBuilder();
+        List<GenericRecord> list = getRows(tableId);
+        for (GenericRecord record : list) {
+            System.out.println("Record read: [" + record + "]");
+            protoRowsBuilder.addSerializedRows(serializer.serialize(record));
+        }
+        StreamWriter streamWriter = getStreamWriter(tableId, serializer);
+        ProtoRows rowsToAppend = protoRowsBuilder.build();
+        AppendRowsResponse response = streamWriter.append(rowsToAppend).get();
+        streamWriter.close();
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    public void testTimeSchemaStringMicroSecondsInsertion() throws Exception {
+        String tableId = "time";
+        String fieldString =
+                " \"fields\": [\n"
+                        + "   {\"name\": \"time\", \"type\": {\"type\": \"string\", \"logicalType\": \"time-micros\"}}\n"
+                        + " ]\n";
+
+        Schema avroSchema = getAvroSchemaFromFieldString(fieldString);
+        BigQueryProtoSerializer<GenericRecord> serializer = new AvroToProtoSerializer(avroSchema);
+        ProtoRows.Builder protoRowsBuilder = ProtoRows.newBuilder();
+        GenericRecord record = StorageClientFaker.createRecord(avroSchema);
+        record.put("time", "11:04:37.937998");
         protoRowsBuilder.addSerializedRows(serializer.serialize(record));
-        StreamWriter streamWriter = getStreamWriter("time", serializer);
+        StreamWriter streamWriter = getStreamWriter(tableId, serializer);
         ProtoRows rowsToAppend = protoRowsBuilder.build();
         AppendRowsResponse response = streamWriter.append(rowsToAppend).get();
         streamWriter.close();
@@ -424,26 +437,27 @@ public class AvroToProtoSerializerITCase {
     @Test
     public void testTimeSchemaMilliSecondsInsertion() throws Exception {
 
+        String tableId = "time";
         String fieldString =
                 " \"fields\": [\n"
-                        + "   {\"name\": \"time\", \"type\": {\"type\": \"long\", \"logicalType\": \"time-millis\"}}\n"
+                        + "   {\"name\": \"time\", \"type\": {\"type\": \"long\", \"logicalType\": \"time-micros\"}}\n"
                         + " ]\n";
 
         Schema avroSchema = getAvroSchemaFromFieldString(fieldString);
         GenericRecord record = StorageClientFaker.createRecord(avroSchema);
         // convert to timestamp and add the microseconds
-        long timestamp = Instant.now().getMillis();
-        record.put("time", timestamp);
-
+        //        org.threeten.bp.LocalTime time = org.threeten.bp.LocalTime.now();
+        //        readRows();
+        record.put("time", Long.parseLong("70556844459"));
         System.out.println("Record write: [" + record + "]");
         BigQueryProtoSerializer<GenericRecord> serializer = new AvroToProtoSerializer(avroSchema);
         ProtoRows.Builder protoRowsBuilder = ProtoRows.newBuilder();
-        protoRowsBuilder.addSerializedRows(serializer.serialize(record));
         StreamWriter streamWriter = getStreamWriter("time", serializer);
+        protoRowsBuilder.addSerializedRows(serializer.serialize(record));
         ProtoRows rowsToAppend = protoRowsBuilder.build();
         AppendRowsResponse response = streamWriter.append(rowsToAppend).get();
-        streamWriter.close();
         assertThat(response).isNotNull();
+        streamWriter.close();
     }
 
     @Test
@@ -496,6 +510,66 @@ public class AvroToProtoSerializerITCase {
         ProtoRows.Builder protoRowsBuilder = ProtoRows.newBuilder();
         protoRowsBuilder.addSerializedRows(serializer.serialize(record));
         StreamWriter streamWriter = getStreamWriter("datetime", serializer);
+        ProtoRows rowsToAppend = protoRowsBuilder.build();
+        AppendRowsResponse response = streamWriter.append(rowsToAppend).get();
+        streamWriter.close();
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    public void testStringDateTimeSchemaMilliSecondsInsertion() throws Exception {
+
+        String fieldString =
+                " \"fields\": [\n"
+                        + "   {\"name\": \"datetime\", \"type\": {\"type\": \"long\", \"logicalType\": \"local-timestamp-millis\"}}\n"
+                        + " ]\n";
+
+        Schema avroSchema = getAvroSchemaFromFieldString(fieldString);
+        GenericRecord record = StorageClientFaker.createRecord(avroSchema);
+        // convert to timestamp and add the microseconds
+        org.threeten.bp.LocalDateTime datetime = org.threeten.bp.LocalDateTime.now();
+        ProtoRows.Builder protoRowsBuilder = ProtoRows.newBuilder();
+        BigQueryProtoSerializer<GenericRecord> serializer = new AvroToProtoSerializer(avroSchema);
+        record.put("datetime", (long) 123456789);
+        System.out.println("Record write: [" + record + "]");
+        protoRowsBuilder.addSerializedRows(serializer.serialize(record));
+
+        //        fieldString =
+        //                " \"fields\": [\n"
+        //                        + "   {\"name\": \"datetime\", \"type\": {\"type\": \"long\",
+        // \"logicalType\": \"local-timestamp-micros\"}}\n"
+        //                        + " ]\n";
+        //
+        //        avroSchema = getAvroSchemaFromFieldString(fieldString);
+        //        record = StorageClientFaker.createRecord(avroSchema);
+        //        record.put("datetime", CivilTimeEncoder.encodePacked64DatetimeMicros(datetime));
+        //        System.out.println("Record write: [" + record + "]");
+        //        protoRowsBuilder.addSerializedRows(serializer.serialize(record));
+
+        StreamWriter streamWriter = getStreamWriter("datetime", serializer);
+        ProtoRows rowsToAppend = protoRowsBuilder.build();
+        AppendRowsResponse response = streamWriter.append(rowsToAppend).get();
+        streamWriter.close();
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    public void testStringDateTimeSchemaMicroSecondsInsertion() throws Exception {
+
+        String fieldString =
+                " \"fields\": [\n"
+                        + "   {\"name\": \"time\", \"type\": {\"type\": \"string\", \"logicalType\": \"local-timestamp-micros\"}}\n"
+                        + " ]\n";
+
+        Schema avroSchema = getAvroSchemaFromFieldString(fieldString);
+        GenericRecord record = StorageClientFaker.createRecord(avroSchema);
+        // convert to timestamp and add the microseconds
+        record.put("time", "10:11:48.529123");
+        System.out.println("Record write: [" + record + "]");
+        BigQueryProtoSerializer<GenericRecord> serializer = new AvroToProtoSerializer(avroSchema);
+        ProtoRows.Builder protoRowsBuilder = ProtoRows.newBuilder();
+        protoRowsBuilder.addSerializedRows(serializer.serialize(record));
+        StreamWriter streamWriter = getStreamWriter("time", serializer);
         ProtoRows rowsToAppend = protoRowsBuilder.build();
         AppendRowsResponse response = streamWriter.append(rowsToAppend).get();
         streamWriter.close();
@@ -565,30 +639,29 @@ public class AvroToProtoSerializerITCase {
         assertThat(response).isNotNull();
     }
 
-    //    @Test
-    //    public void readRows() throws Exception {
-    //
-    //        BigQueryReadOptions writeOptions =
-    //                BigQueryReadOptions.builder()
-    //                        .setBigQueryConnectOptions(
-    //                                BigQueryConnectOptions.builder()
-    //                                        .setProjectId("bqrampupprashasti")
-    //                                        .setDataset("testing_dataset")
-    //                                        .setTable("bignumeric")
-    //                                        .build())
-    //                        .build();
-    //        final StreamExecutionEnvironment env =
-    // StreamExecutionEnvironment.getExecutionEnvironment();
-    //        System.out.println("env formed");
-    //        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(writeOptions);
-    //        System.out.println("source formed");
-    //        List<GenericRecord> list =
-    //                env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQuerySource")
-    //                        .executeAndCollect(100);
-    //        for (GenericRecord element : list) {
-    //            System.out.println(element);
-    //        }
-    //    }
+    @Test
+    public void readRows() throws Exception {
+
+        BigQueryReadOptions writeOptions =
+                BigQueryReadOptions.builder()
+                        .setBigQueryConnectOptions(
+                                BigQueryConnectOptions.builder()
+                                        .setProjectId("bqrampupprashasti")
+                                        .setDataset("testing_dataset")
+                                        .setTable("time")
+                                        .build())
+                        .build();
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        System.out.println("env formed");
+        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(writeOptions);
+        System.out.println("source formed");
+        List<GenericRecord> list =
+                env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQuerySource")
+                        .executeAndCollect(100);
+        for (GenericRecord element : list) {
+            System.out.println(element);
+        }
+    }
 
     private static List<GenericRecord> getRows(String tableId) throws Exception {
 
