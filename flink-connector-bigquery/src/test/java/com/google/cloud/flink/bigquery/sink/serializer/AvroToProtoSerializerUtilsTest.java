@@ -1,8 +1,11 @@
 package com.google.cloud.flink.bigquery.sink.serializer;
 
+import com.google.protobuf.ByteString;
 import org.joda.time.Instant;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,6 +79,14 @@ public class AvroToProtoSerializerUtilsTest {
         assertThrows(
                 ClassCastException.class,
                 () -> AvroToProtoSerializerUtils.convertBigDecimal(value));
+    }
+
+    @Test
+    public void testConvertBigNumeric() {
+        BigDecimal bigDecimal = new BigDecimal("1234567.89101112");
+        Object byteBuffer = ByteBuffer.wrap(bigDecimal.unscaledValue().toByteArray());
+        ByteString convertedValue = AvroToProtoSerializerUtils.convertBigDecimal(byteBuffer);
+        System.out.println(convertedValue);
     }
 
     @Test
