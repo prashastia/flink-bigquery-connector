@@ -1,11 +1,10 @@
 package com.google.cloud.flink.bigquery.sink.serializer;
 
-import org.apache.flink.shaded.guava30.com.google.common.primitives.Bytes;
-
 import com.google.api.client.util.Preconditions;
 import com.google.cloud.bigquery.storage.v1.BigDecimalByteStringEncoder;
 import com.google.cloud.bigquery.storage.v1.CivilTimeEncoder;
 import com.google.protobuf.ByteString;
+import org.apache.commons.lang3.ArrayUtils;
 import org.joda.time.Days;
 import org.joda.time.Instant;
 import org.joda.time.ReadableInstant;
@@ -104,7 +103,6 @@ public class AvroToProtoSerializerUtils {
 
     static String convertDateTime(Object value, boolean micros) {
         if (value instanceof String) {
-            // TODO: Add validation to check if the provided STRING is a valid DATETIME Literal.
             return (String) value;
         }
         if (value instanceof Long) {
@@ -112,7 +110,6 @@ public class AvroToProtoSerializerUtils {
              * Assume that it is provided in {@link CivilTimeEncoder} Encoding Microsecond Precision
              * format
              */
-            // TODO: Add implementation to handle millisecond precision.
             return CivilTimeEncoder.decodePacked64DatetimeMicros((long) value).toString();
         }
         throw new UnsupportedOperationException(
@@ -121,7 +118,6 @@ public class AvroToProtoSerializerUtils {
 
     static String convertTime(Object value, boolean micros) {
         if (value instanceof String) {
-            // TODO: Add validation to check if the provided STRING is a valid TIME Literal.
             return (String) value;
         }
         if (value instanceof Long) {
@@ -129,7 +125,6 @@ public class AvroToProtoSerializerUtils {
              * Assume that it is provided in {@link CivilTimeEncoder} Encoding Microsecond Precision
              * format
              */
-            // TODO: Add implementation to handle microsecond precision.
             return CivilTimeEncoder.decodePacked64TimeMicros((long) value).toString();
         }
         throw new UnsupportedOperationException(
@@ -148,7 +143,7 @@ public class AvroToProtoSerializerUtils {
         // Reverse before sending to big endian convertor.
         // decodeBigNumericByteString() assumes string to be provided in little-endian.
         byte[] byteArray = byteBuffer.array();
-        Bytes.reverse(byteArray); // Converted to little-endian.
+        ArrayUtils.reverse(byteArray); // Converted to little-endian.
         BigDecimal bigDecimal =
                 BigDecimalByteStringEncoder.decodeBigNumericByteString(
                         ByteString.copyFrom(byteArray));
@@ -158,7 +153,7 @@ public class AvroToProtoSerializerUtils {
     static ByteString convertDecimal(Object value) {
         ByteBuffer byteBuffer = (ByteBuffer) value;
         byte[] byteArray = byteBuffer.array();
-        Bytes.reverse(byteArray);
+        ArrayUtils.reverse(byteArray);
         // assumes Byte string is stored in LittleEndian encoding
         BigDecimal bigDecimal =
                 BigDecimalByteStringEncoder.decodeNumericByteString(
@@ -170,11 +165,7 @@ public class AvroToProtoSerializerUtils {
         Preconditions.checkArgument(
                 value instanceof String,
                 "Expecting a value as String type (geography_wkt or geojson format).");
-        String geographyString = (String) value;
-        // TODO: add validations to check if a valid GEO-WKT or GEO-JSON Instance.
-        //        throw new IllegalArgumentException(String.format("The input string %s is not in
-        // GeoJSON or GEO-WKT Format.", geographyString));
-        return geographyString;
+        return (String) value;
     }
 
     static String convertJson(Object value) {
