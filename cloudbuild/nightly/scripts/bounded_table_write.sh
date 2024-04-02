@@ -18,7 +18,8 @@ PROPERTIES=$1
 # We won't run this async as we can wait for a bounded job to succeed or fail.
 # Create the table from the source table schema.
 python3 cloudbuild/nightly/scripts/python-scripts/create_sink_table.py -- --project_name "$PROJECT_NAME" --dataset_name "$DATASET_NAME" --source_table_name "$SOURCE_TABLE_NAME" --destination_table_name "$DESTINATION_TABLE_NAME"
-
+# Set the expiration time to 1 hour.
+bq update --expiration 3600 "$DATASET_NAME"."$DESTINATION_TABLE_NAME"
 # Run the sink JAR JOB
 bq --location=$REGION cp -a -f -n "$PROJECT_NAME":"$DATASET_NAME"."$SOURCE_TABLE_NAME" "$PROJECT_NAME":"$DATASET_NAME"."$DESTINATION_TABLE_NAME"
 #gcloud dataproc jobs submit flink --id "$JOB_ID" --jar="$GCS_JAR_LOCATION" --cluster="$CLUSTER_NAME" --region="$REGION" --properties="$PROPERTIES" -- --gcp-project "$PROJECT_NAME" --bq-dataset "$DATASET_NAME" --bq-table "$TABLE_NAME"
