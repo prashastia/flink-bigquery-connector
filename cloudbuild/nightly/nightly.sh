@@ -70,10 +70,6 @@ run_write_test(){
   IS_EXACTLY_ONCE_ENABLED=$8
   MODE=$9
   PROPERTIES=${10}
-  #  Get the timestamp to append to destination table name.
-  timestamp=$(date +"%Y%m%d%H%M%S")
-  # Modify the destination table name for all tests.
-  DESTINATION_TABLE_NAME="$DESTINATION_TABLE_NAME"-"$timestamp"
   # Get the final region and the cluster name.
   export REGION=$(cat "$REGION_FILE")
   export CLUSTER_NAME=$(cat "$CLUSTER_FILE")
@@ -126,7 +122,7 @@ case $STEP in
 
   # Run the small table read bounded e2e test.
   e2e_bounded_write_small_table_test)
-    IS_EXACTLY_ONCE_ENABLED=True
+    IS_EXACTLY_ONCE_ENABLED=False
     run_write_test "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "$TABLE_NAME_SOURCE_SIMPLE_TABLE" "$TABLE_NAME_DESTINATION_SIMPLE_TABLE" "$IS_EXACTLY_ONCE_ENABLED" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB"
     exit
     ;;
@@ -147,6 +143,13 @@ case $STEP in
   e2e_bounded_read_large_table_test)
     # Run the large table test.
     run_test_delete_cluster "$PROJECT_ID" "$REGION_LARGE_TABLE_TEST_FILE" "$CLUSTER_LARGE_TABLE_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "$TABLE_NAME_LARGE_TABLE" "$AGG_PROP_NAME_LARGE_TABLE" "" "bounded" "$PROPERTIES_LARGE_BOUNDED_JOB"
+    exit
+    ;;
+
+  # Run the small table read bounded e2e test.
+  e2e_unbounded_write_test)
+    IS_EXACTLY_ONCE_ENABLED=False
+    run_write_test "$PROJECT_ID" "$REGION_UNBOUNDED_TABLE_TEST_FILE" "$CLUSTER_UNBOUNDED_TABLE_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "$TABLE_NAME_SOURCE_UNBOUNDED_TABLE" "$TABLE_NAME_DESTINATION_UNBOUNDED_TABLE" "$IS_EXACTLY_ONCE_ENABLED" "unbounded" "$PROPERTIES_UNBOUNDED_JOB"
     exit
     ;;
 

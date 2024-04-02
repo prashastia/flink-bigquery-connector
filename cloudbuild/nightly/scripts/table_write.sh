@@ -28,24 +28,24 @@ PROPERTIES=${10}
 set -euxo pipefail
 gcloud config set project "$PROJECT_ID"
 
+# Obtain Timestamp
+timestamp=$(date +"%Y%m%d%H%M%S")
 # Create a random JOB_ID
 JOB_ID=$(echo "$RANDOM" | md5sum | cut -c 1-30)
 # Adds timestamp to job_id to prevent repetition.
-JOB_ID="$JOB_ID"_$(date +"%Y%m%d%H%M%S")
+JOB_ID="$JOB_ID"_"$timestamp"
 echo [LOGS: "$PROJECT_NAME"."$DATASET_NAME"."$SOURCE_TABLE_NAME" Write Test] Created JOB ID: "$JOB_ID"
 
 if [ "$MODE" == "bounded" ]
 then
   echo "Bounded Mode!"
+  # Modify the destination table name for all tests.
+  DESTINATION_TABLE_NAME="$SOURCE_TABLE_NAME"-"$timestamp"
   source cloudbuild/nightly/scripts/bounded_table_write.sh "$PROPERTIES"
-  # Wait for the logs to be saved.
-  # Logs take some time to be saved and be available.
-  # wait for a few seconds to ensure smooth execution.
-  sleep 5
 elif [ "$MODE" == "unbounded" ]
 then
   echo "Unbounded Mode!"
-  source cloudbuild/nightly/scripts/unbounded_table_write.sh "$PROPERTIES"
+  source cloudbuild/nightly/scripts/unbounded_table_write.sh "$PROPERTIES" "$timestamp"
   # Add more sleep time. as IO might take time.
   # Logs take some time to be saved and be available.
   sleep 60
