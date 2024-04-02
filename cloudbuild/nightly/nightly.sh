@@ -59,6 +59,30 @@ run_test(){
 }
 
 # Function to run the test to check BQ Table Read.
+run_write_test(){
+  PROJECT_ID=$1
+  REGION_FILE=$2
+  CLUSTER_FILE=$3
+  PROJECT_NAME=$4
+  DATASET_NAME=$5
+  SOURCE_TABLE_NAME=$6
+  DESTINATION_TABLE_NAME=$7
+  IS_EXACTLY_ONCE_ENABLED=$8
+  MODE=$9
+  PROPERTIES=${10}
+  #  Get the timestamp to append to destination table name.
+  timestamp=$(date +"%Y%m%d%H%M%S")
+  # Modify the destination table name for all tests.
+  DESTINATION_TABLE_NAME="$DESTINATION_TABLE_NAME"-"$timestamp"
+  # Get the final region and the cluster name.
+  export REGION=$(cat "$REGION_FILE")
+  export CLUSTER_NAME=$(cat "$CLUSTER_FILE")
+
+  # Run the simple bounded table test.
+  source cloudbuild/nightly/scripts/table_write.sh "$PROJECT_ID" "$CLUSTER_NAME" "$REGION" "$PROJECT_NAME" "$DATASET_NAME" "$SOURCE_TABLE_NAME" "$DESTINATION_TABLE_NAME" "$IS_EXACTLY_ONCE_ENABLED" "$MODE" "$PROPERTIES"
+}
+
+# Function to run the test to check BQ Table Read.
 # Also, delete the cluster and its buckets.
 run_test_delete_cluster(){
   PROJECT_ID=$1
@@ -97,6 +121,13 @@ case $STEP in
   # Run the small table read bounded e2e test.
   e2e_bounded_read_small_table_test)
     run_test "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "$TABLE_NAME_SIMPLE_TABLE" "$AGG_PROP_NAME_SIMPLE_TABLE" "" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB"
+    exit
+    ;;
+
+  # Run the small table read bounded e2e test.
+  e2e_bounded_write_small_table_test)
+    IS_EXACTLY_ONCE_ENABLED=True
+    run_write_test "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "$TABLE_NAME_SOURCE_SIMPLE_TABLE" "$TABLE_NAME_DESTINATION_SIMPLE_TABLE" "$IS_EXACTLY_ONCE_ENABLED" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB"
     exit
     ;;
 

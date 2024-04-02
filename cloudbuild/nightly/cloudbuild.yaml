@@ -82,10 +82,27 @@ steps:
       - 'REGION_SMALL_TEST_FILE=${_REGION_SMALL_TEST_FILE}'
       - 'CLUSTER_SMALL_TEST_FILE=${_CLUSTER_SMALL_TEST_FILE}'
 
+  # 7. Start the write test for schema table read e2e test.
+  - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
+    id: 'e2e-bounded-write-small-table-test'
+    waitFor: ['e2e-bounded-read-small-table-test']
+    entrypoint: 'bash'
+    args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_bounded_write_small_table_test']
+    env:
+      - 'GCS_JAR_LOCATION=${_GCS_JAR_LOCATION}'
+      - 'PROJECT_ID=${_PROJECT_ID}'
+      - 'PROJECT_NAME=${_PROJECT_NAME}'
+      - 'DATASET_NAME=${_WRITE_DATASET_NAME}'
+      - 'TABLE_NAME_SOURCE_SIMPLE_TABLE=${_TABLE_NAME_SIMPLE_TABLE}'
+      - 'TABLE_NAME_DESTINATION_SIMPLE_TABLE=${_TABLE_NAME_SIMPLE_TABLE}'
+      - 'PROPERTIES_SMALL_BOUNDED_JOB=${_PROPERTIES_SMALL_BOUNDED_JOB}'
+      - 'REGION_SMALL_TEST_FILE=${_REGION_SMALL_TEST_FILE}'
+      - 'CLUSTER_SMALL_TEST_FILE=${_CLUSTER_SMALL_TEST_FILE}'
+
 # 7. Start the nested schema table read e2e test.
   - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
     id: 'e2e-bounded-read-nested-schema-table-test'
-    waitFor: ['e2e-bounded-read-small-table-test']
+    waitFor: ['e2e-bounded-write-small-table-test']
     entrypoint: 'bash'
     args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_bounded_read_nested_schema_table_test']
     env:
