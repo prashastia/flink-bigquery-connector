@@ -34,7 +34,7 @@ create_cluster(){
   # - Modify the cluster name for all tests.
   CLUSTER_NAME="$CLUSTER_NAME"-"$timestamp"
   # - call script that creates cluster with retries.
-  source cloudbuild/nightly/scripts/create_dataproc_cluster.sh "$CLUSTER_NAME" "$REGION_ARRAY_STRING" "$NUM_WORKERS" "$REGION_FILE" "$WORKER_MACHINE_TYPE"
+#  source cloudbuild/nightly/scripts/create_dataproc_cluster.sh "$CLUSTER_NAME" "$REGION_ARRAY_STRING" "$NUM_WORKERS" "$REGION_FILE" "$WORKER_MACHINE_TYPE"
   # - save the cluster for future uses
   echo "$CLUSTER_NAME" > "$CLUSTER_FILE"
 }
@@ -95,8 +95,8 @@ run_test_delete_cluster(){
 case $STEP in
   # Download maven and all the dependencies
   init)
-    $MVN clean install -DskipTests
-    gcloud storage cp "$MVN_JAR_LOCATION" "$GCS_JAR_LOCATION"
+#    $MVN clean install -DskipTests
+#    gcloud storage cp "$MVN_JAR_LOCATION" "$GCS_JAR_LOCATION"
     exit
     ;;
 
