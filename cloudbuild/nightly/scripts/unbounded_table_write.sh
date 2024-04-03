@@ -17,7 +17,7 @@ PROPERTIES=$1
 timestamp=$2
 
 # Copy the table
-bq cp -f "$DATASET_NAME"."$TABLE_NAME" "$DATASET_NAME"."$TABLE_NAME"_"$timestamp"
+bq cp -f "$DATASET_NAME"."$SOURCE_TABLE_NAME" "$DATASET_NAME"."$SOURCE_TABLE_NAME"_"$timestamp"
 
 # Set the table name to above copy for using in this test.
 SOURCE_TABLE_NAME="$SOURCE_TABLE_NAME"_"$timestamp"
