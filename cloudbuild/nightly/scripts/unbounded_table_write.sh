@@ -26,7 +26,7 @@ SOURCE_TABLE_NAME="$SOURCE_TABLE_NAME"_"$timestamp"
 DESTINATION_TABLE_NAME="$SOURCE_TABLE_NAME"_"$timestamp"
 
 # Set the expiration time to 1 hour.
-bq update --expiration 3600 "$DATASET_NAME"."$TABLE_NAME"
+bq update --expiration 3600 "$DATASET_NAME"."$SOURCE_TABLE_NAME"
 #TODO: Remove Below Line
 bq --location="$REGION" cp -a -f -n "$PROJECT_NAME":"$DATASET_NAME"."$SOURCE_TABLE_NAME" "$PROJECT_NAME":"$DATASET_NAME"."$DESTINATION_TABLE_NAME"
 #TODO: Uncomment Lines Below
