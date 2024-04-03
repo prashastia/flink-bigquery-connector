@@ -154,7 +154,7 @@ steps:
     id: 'e2e-unbounded-write-test'
     waitFor: ['create-clusters-unbounded-table']
     entrypoint: 'bash'
-    args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_unbounded_read_test']
+    args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_unbounded_write_test']
     env:
       - 'GCS_JAR_LOCATION=${_GCS_JAR_LOCATION}'
       - 'PROJECT_ID=${_PROJECT_ID}'
