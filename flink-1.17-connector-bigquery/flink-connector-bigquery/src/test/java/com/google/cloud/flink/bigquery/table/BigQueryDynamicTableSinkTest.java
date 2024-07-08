@@ -17,13 +17,11 @@
 package com.google.cloud.flink.bigquery.table;
 
 import org.apache.flink.connector.base.DeliveryGuarantee;
-import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.sink.SinkV2Provider;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.test.junit5.MiniClusterExtension;
 
 import com.google.cloud.flink.bigquery.fakes.StorageClientFaker;
 import com.google.cloud.flink.bigquery.sink.BigQuerySinkConfig;
@@ -31,7 +29,6 @@ import com.google.cloud.flink.bigquery.sink.serializer.RowDataToProtoSerializer;
 import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import java.io.IOException;
@@ -44,15 +41,6 @@ public class BigQueryDynamicTableSinkTest {
     static BigQueryDynamicTableSink bigQueryDynamicTableSink = null;
     static LogicalType logicalTypeSchema = null;
     static BigQuerySinkConfig bigQuerySinkConfig = null;
-
-    private static final int PARALLELISM = 1;
-
-    @RegisterExtension
-    static final MiniClusterExtension MINI_CLUSTER_RESOURCE =
-            new MiniClusterExtension(
-                    new MiniClusterResourceConfiguration.Builder()
-                            .setNumberTaskManagers(PARALLELISM)
-                            .build());
 
     @BeforeAll
     public static void beforeTest() throws IOException {
