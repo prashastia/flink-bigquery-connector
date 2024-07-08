@@ -21,6 +21,7 @@ if [ -z "${CODECOV_TOKEN}" ]; then
   exit 1
 fi
 
+echo $(dirname $(dirname $(readlink -f $(which javac))))
 export JAVA_HOME=$(/usr/libexec/java_home -v 11.0.20)
 readonly MVN="./mvnw -B -e -s /workspace/cloudbuild/presubmit/gcp-settings.xml -Dmaven.repo.local=/workspace/.repository"
 readonly STEP=$1
