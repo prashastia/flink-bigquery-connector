@@ -29,6 +29,7 @@ cd /workspace
 case $STEP in
   # Download maven and all the dependencies
   init)
+    java --version
     $MVN clean install -DskipTests -Pflink_1.17
     exit
     ;;
