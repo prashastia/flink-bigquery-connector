@@ -337,11 +337,6 @@ under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<argLine>@{argLine} -Xshare:off</argLine>
-					<parallel>all</parallel>
-					<reportsDirectory>${surefire.report.dir}</reportsDirectory>
-				</configuration>
             </plugin>
 
             <plugin>
@@ -435,8 +430,6 @@ under the License.
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-							<argLine>@{argLine} -Xshare:off</argLine>
-							<parallel>all</parallel>
                             <reportsDirectory>${surefire.report.dir}</reportsDirectory>
                         </configuration>
                     </plugin>
