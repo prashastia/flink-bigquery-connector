@@ -25,10 +25,14 @@ import org.apache.flink.test.junit5.MiniClusterExtension;
 import com.google.cloud.flink.bigquery.fakes.StorageClientFaker;
 import com.google.cloud.flink.bigquery.sink.BigQuerySinkConfig;
 import com.google.cloud.flink.bigquery.sink.serializer.RowDataToProtoSerializer;
+import org.apache.avro.Schema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.Mockito;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 /** Class to test {@link BigQueryDynamicTableSink}. */
 public class BigQueryDynamicTableSinkTest {
@@ -68,30 +72,27 @@ public class BigQueryDynamicTableSinkTest {
                 DataTypes.ROW(DataTypes.FIELD("number", DataTypes.BIGINT().notNull()))
                         .notNull()
                         .getLogicalType();
-        BigQuerySinkConfig bigQuerySinkConfig =
-                BigQuerySinkConfig.newBuilder()
-                        .deliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
-                        .connectOptions(StorageClientFaker.createConnectOptionsForWrite(null))
-                        .serializer(new RowDataToProtoSerializer())
-                        .build();
 
-        //        BigQueryDynamicTableSink bigQueryDynamicTableSink =
-        //                new BigQueryDynamicTableSink(bigQuerySinkConfig, logicalTypeSchema);
-        //
-        //
-        //        BigQuerySinkConfig obtainedSinkConfig = bigQueryDynamicTableSink.getSinkConfig();
-        //        assertEquals(logicalTypeSchema, bigQueryDynamicTableSink.getLogicalType());
-        //        assertEquals(DeliveryGuarantee.AT_LEAST_ONCE,
-        // obtainedSinkConfig.getDeliveryGuarantee());
-        //        Schema convertedAvroSchema =
-        //                new Schema.Parser()
-        //                        .parse(
-        //                                "{\"type\":\"record\",\"name\":\"record\","
-        //                                        +
-        // "\"namespace\":\"org.apache.flink.avro.generated\",\"fields\":"
-        //                                        + "[{\"name\":\"number\",\"type\":\"long\"}]}");
-        //        assertEquals(convertedAvroSchema,
-        // obtainedSinkConfig.getSchemaProvider().getAvroSchema());
+        BigQuerySinkConfig bigQuerySinkConfig = Mockito.mock(BigQuerySinkConfig.class);
+        Mockito.when(bigQuerySinkConfig.getConnectOptions())
+                .thenReturn(StorageClientFaker.createConnectOptionsForWrite(null));
+        Mockito.when(bigQuerySinkConfig.getSerializer()).thenReturn(new RowDataToProtoSerializer());
+        Mockito.when(bigQuerySinkConfig.getDeliveryGuarantee())
+                .thenReturn(DeliveryGuarantee.AT_LEAST_ONCE);
+
+        BigQueryDynamicTableSink bigQueryDynamicTableSink =
+                new BigQueryDynamicTableSink(bigQuerySinkConfig, logicalTypeSchema);
+
+        BigQuerySinkConfig obtainedSinkConfig = bigQueryDynamicTableSink.getSinkConfig();
+        assertEquals(logicalTypeSchema, bigQueryDynamicTableSink.getLogicalType());
+        assertEquals(DeliveryGuarantee.AT_LEAST_ONCE, obtainedSinkConfig.getDeliveryGuarantee());
+        Schema convertedAvroSchema =
+                new Schema.Parser()
+                        .parse(
+                                "{\"type\":\"record\",\"name\":\"record\","
+                                        + "\"namespace\":\"org.apache.flink.avro.generated\","
+                                        + "\"fields\": [{\"name\":\"number\",\"type\":\"long\"}]}");
+        assertEquals(convertedAvroSchema, obtainedSinkConfig.getSchemaProvider().getAvroSchema());
     }
     //
     //    @Test
