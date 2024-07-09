@@ -20,8 +20,6 @@ import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.connector.ChangelogMode;
-import org.apache.flink.table.connector.sink.DynamicTableSink;
-import org.apache.flink.table.connector.sink.SinkV2Provider;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.test.junit5.MiniClusterExtension;
 
@@ -37,7 +35,6 @@ import org.mockito.Mockito;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /** Class to test {@link BigQueryDynamicTableSink}. */
 public class BigQueryDynamicTableSinkTest {
@@ -110,13 +107,13 @@ public class BigQueryDynamicTableSinkTest {
                 bigQueryDynamicTableSink.getChangelogMode(Mockito.mock(ChangelogMode.class)));
     }
 
-//    @Test
-//    public void testSinkRuntimeProvider() {
-//        BigQueryDynamicTableSink bigQueryDynamicTableSink =
-//                new BigQueryDynamicTableSink(bigQuerySinkConfig, logicalTypeSchema);
-//        assertInstanceOf(
-//                SinkV2Provider.class,
-//                bigQueryDynamicTableSink.getSinkRuntimeProvider(
-//                        Mockito.mock(DynamicTableSink.Context.class)));
-//    }
+    //    @Test
+    //    public void testSinkRuntimeProvider() {
+    //        BigQueryDynamicTableSink bigQueryDynamicTableSink =
+    //                new BigQueryDynamicTableSink(bigQuerySinkConfig, logicalTypeSchema);
+    //        assertInstanceOf(
+    //                SinkV2Provider.class,
+    //                bigQueryDynamicTableSink.getSinkRuntimeProvider(
+    //                        Mockito.mock(DynamicTableSink.Context.class)));
+    //    }
 }
