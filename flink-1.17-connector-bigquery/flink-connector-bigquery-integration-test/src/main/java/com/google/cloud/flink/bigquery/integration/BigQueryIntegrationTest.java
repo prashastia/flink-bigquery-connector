@@ -98,7 +98,7 @@ import static org.apache.flink.table.api.Expressions.call;
  *         <li>--bq-dest-table {optional; name of Destination BigQuery table to write} <br>
  *         <li>--sink-parallelism {optional; parallelism for sink job}
  *         <li>--exactly-once {optional; set flag to enable exactly once approach}
- *         <li>--is-sql {optional; set flag to run Table API methods for read and write}</li>
+ *         <li>--is-sql {optional; set flag to run Table API methods for read and write}
  *       </ul>
  *       The sequence of operations in the read and write pipeline is: <i>source > map > sink</i>.
  *       <br>
@@ -108,12 +108,12 @@ import static org.apache.flink.table.api.Expressions.call;
  *       counts the total number of records read (the number of records observed by map operation)
  *       and logs this count at the end. It also logs the "HOUR" and "DAY" value of the obtained
  *       rows in order to verify the query correctness. <br>
- *       In case the <code>is-sql</code> flag is set to true, Flink's Table API's
- *       <code>.select($(*))</code> method is executed. Which is responsible for reading
- *       a source table. These read records are then pass through a flat map which appends a string
- *       to the "name" field in the record. These modified records are written back to BigQuery using
- *       <code>.insertInto().execute()</code>.
- *       Overall, the execution pipeline for Table API is read > flatmap > sink. <br>
+ *       In case the <code>is-sql</code> flag is set to true, Flink's Table API's <code>
+ *       .select($(*))</code> method is executed. Which is responsible for reading a source table.
+ *       These read records are then pass through a flat map which appends a string to the "name"
+ *       field in the record. These modified records are written back to BigQuery using <code>
+ *       .insertInto().execute()</code>. Overall, the execution pipeline for Table API is read >
+ *       flatmap > sink. <br>
  *       Command to run bounded tests on Dataproc Cluster is: <br>
  *       {@code gcloud dataproc jobs submit flink --id {JOB_ID} --jar= {GCS_JAR_LOCATION}
  *       --cluster={CLUSTER_NAME} --region={REGION} -- --gcp-source-project {GCP_SOURCE_PROJECT_ID}
@@ -121,8 +121,8 @@ import static org.apache.flink.table.api.Expressions.call;
  *       Name} --agg-prop {PROPERTY_TO_AGGREGATE_ON} --query {QUERY} --gcp-dest-project
  *       {GCP_DESTINATION_PROJECT_ID} --bq-dest-dataset {BigQuery Destination Dataset Name}
  *       --bq-dest-table {BigQuery Destination Table Name} --sink-parallelism {Parallelism to be
- *       followed by the sink} --exactly-once {set flag to enable exactly once approach}
- *       --is-sql {set flag to enable running Flink's Table API methods}} <br>
+ *       followed by the sink} --exactly-once {set flag to enable exactly once approach} --is-sql
+ *       {set flag to enable running Flink's Table API methods}} <br>
  *   <li>Unbounded Job: Involve reading from and writing to a partitioned BigQuery Table in the <i>
  *       unbounded </i> mode.<br>
  *       This test requires some additional arguments besides the ones mentioned in the bounded
@@ -140,9 +140,9 @@ import static org.apache.flink.table.api.Expressions.call;
  *       The sequence of operations in this pipeline is simply <i>source > sink</i>. <br>
  *       This job is run asynchronously. The test appends newer partitions to check the read
  *       correctness. Hence, after the job is created new partitions are added.<br>
- *       In unbounded mode, the SQL read and write is similar as described above for
- *       bounded mode with incremental partitions being read and written to BigQuery as per the
- *       described unbounded mode.<br>
+ *       In unbounded mode, the SQL read and write is similar as described above for bounded mode
+ *       with incremental partitions being read and written to BigQuery as per the described
+ *       unbounded mode.<br>
  *       Command to run unbounded tests on Dataproc Cluster is: <br>
  *       {@code gcloud dataproc jobs submit flink --id {JOB_ID} --jar= {GCS_JAR_LOCATION}
  *       --cluster={CLUSTER_NAME} --region={REGION} -- --gcp-source-project {GCP_SOURCE_PROJECT_ID}
@@ -152,7 +152,8 @@ import static org.apache.flink.table.api.Expressions.call;
  *       --bq-dest-table {BigQuery Destination Table Name} --sink-parallelism {Parallelism to be
  *       followed by the sink} --exactly-once {set flag to enable exactly once approach} --mode
  *       unbounded --ts-prop {TIMESTAMP_PROPERTY} --partition-discovery-interval
- *       {PARTITION_DISCOVERY_INTERVAL} --is-sql {set flag to enable running Flink's Table API methods}}
+ *       {PARTITION_DISCOVERY_INTERVAL} --is-sql {set flag to enable running Flink's Table API
+ *       methods}}
  * </ol>
  */
 public class BigQueryIntegrationTest {
