@@ -669,8 +669,8 @@ public class BigQueryIntegrationTest {
         Table sourceTable =
                 tEnv.from("bigQuerySourceTable")
                         .select($("*"))
-                        .flatMap(call("func", Row.of($("name"), $("number"), $("ts"))))
-                        .as($("name"), $("number"), $("ts"));
+                        .flatMap(call("func", Row.of($("unique_key"), $("name"), $("number"), $("ts"))))
+                        .as($("unique_key"), $("name"), $("number"), $("ts"));
 
         BigQueryTableConfig sinkTableConfig =
                 BigQuerySinkTableConfig.newBuilder()
@@ -752,10 +752,12 @@ public class BigQueryIntegrationTest {
         tEnv.createTable(
                 "bigQuerySourceTable",
                 BigQueryTableSchemaProvider.getTableDescriptor(readTableConfig));
-        Table sourceTable = tEnv.from("bigQuerySourceTable");
 
         // Fetch entries in this sourceTable
-        sourceTable = sourceTable.select($("*"));
+        Table sourceTable = tEnv.from("bigQuerySourceTable")
+                .select($("*"))
+                .flatMap(call("func", Row.of($("unique_key"), $("name"), $("number"), $("ts"))))
+                .as($("unique_key"), $("name"), $("number"), $("ts"));
 
         // Declare Write Options.
         BigQueryTableConfig sinkTableConfig =
@@ -783,11 +785,6 @@ public class BigQueryIntegrationTest {
                 BigQueryTableSchemaProvider.getTableDescriptor(sinkTableConfig));
 
         // Insert the table sourceTable to the registered sinkTable
-        sourceTable =
-                sourceTable
-                        .flatMap(call("func", Row.of($("name"), $("number"), $("ts"))))
-                        .as($("name"), $("number"), $("ts"));
-
         TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
         TableResult res = pipeline.execute();
         res.await();
@@ -795,13 +792,13 @@ public class BigQueryIntegrationTest {
 
     /** Function to flatmap the Table API source Catalog Table. */
     @FunctionHint(
-            input = @DataTypeHint("ROW<`name` STRING, `number` BIGINT, `ts` TIMESTAMP(6)>"),
-            output = @DataTypeHint("ROW<`name` STRING, `number` BIGINT, `ts` TIMESTAMP(6)>"))
+            input = @DataTypeHint("ROW<`unique_key` STRING, `name` STRING, `number` BIGINT, `ts` TIMESTAMP(6)>"),
+            output = @DataTypeHint("ROW<`unique_key` STRING, `name` STRING, `number` BIGINT, `ts` TIMESTAMP(6)>"))
     public static class MySQLFlatMapFunction extends TableFunction<Row> {
 
         public void eval(Row row) {
             String str = (String) row.getField("name");
-            collect(Row.of(str + "_write_test", row.getField("number"), row.getField("ts")));
+            collect(Row.of(row.getField("unique_key"), str + "_write_test", row.getField("number"), row.getField("ts")));
         }
     }
 
