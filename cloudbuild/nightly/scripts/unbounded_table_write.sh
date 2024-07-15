@@ -19,9 +19,9 @@ UNBOUNDED_JOB_SINK_PARALLELISM=$3
 IS_SQL=$4
 
 # Copy the table
-bq cp -f "$DATASET_NAME"."$SOURCE_TABLE_NAME" "$DATASET_NAME"."$SOURCE_TABLE_NAME"_"$timestamp"
+bq cp -f "$DATASET_NAME"."$SOURCE_TABLE_NAME" "$DATASET_NAME"."$SOURCE_TABLE_NAME"_"$timestamp"_"$IS_SQL"
 # Set the table name to above copy for using in this test.
-SOURCE_TABLE_NAME="$SOURCE_TABLE_NAME"_"$timestamp"
+SOURCE_TABLE_NAME="$SOURCE_TABLE_NAME"_"$timestamp"_"$IS_SQL"
 # Set the expiration time to 1 hour.
 bq update --expiration 3600 "$DATASET_NAME"."$SOURCE_TABLE_NAME"
 

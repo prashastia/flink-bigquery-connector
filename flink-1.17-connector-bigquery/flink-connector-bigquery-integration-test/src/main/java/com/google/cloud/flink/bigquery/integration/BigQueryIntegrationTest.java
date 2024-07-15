@@ -196,7 +196,7 @@ public class BigQueryIntegrationTest {
         // Ignored for bounded run and can be set for unbounded mode (not required).
         String mode = parameterTool.get("mode", "bounded");
         Long expectedNumberOfRecords = parameterTool.getLong("expected-records", 210000L);
-        Integer timeoutTimePeriod = parameterTool.getInt("timeout", 18);
+        Integer timeoutTimePeriod = parameterTool.getInt("timeout", 2);
         Integer partitionDiscoveryInterval =
                 parameterTool.getInt("partition-discovery-interval", 10);
 
@@ -231,7 +231,8 @@ public class BigQueryIntegrationTest {
                                 destTableName,
                                 isExactlyOnceEnabled,
                                 recordPropertyForTimestamps,
-                                partitionDiscoveryInterval);
+                                partitionDiscoveryInterval,
+                                timeoutTimePeriod);
                         break;
                     default:
                         throw new IllegalArgumentException(
@@ -732,7 +733,8 @@ public class BigQueryIntegrationTest {
             String destTableName,
             Boolean isExactlyOnceEnabled,
             String recordPropertyForTimestamps,
-            Integer partitionDiscoveryInterval)
+            Integer partitionDiscoveryInterval,
+            Integer timeoutTimePeriod)
             throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -794,7 +796,11 @@ public class BigQueryIntegrationTest {
         // Insert the table sourceTable to the registered sinkTable
         TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
         TableResult res = pipeline.execute();
-        res.await();
+        try {
+            res.await(timeoutTimePeriod, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            LOG.info("Job Cancelled!", e);
+        }
     }
 
     /** Function to flatmap the Table API source Catalog Table. */
