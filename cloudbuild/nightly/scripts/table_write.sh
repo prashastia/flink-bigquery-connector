@@ -52,7 +52,7 @@ then
 elif [ "$MODE" == "unbounded" ]
 then
   echo "Unbounded Mode!"
-  source cloudbuild/nightly/scripts/unbounded_table_write.sh "$PROPERTIES" "$timestamp" "$SINK_PARALLELISM"
+  source cloudbuild/nightly/scripts/unbounded_table_write.sh "$PROPERTIES" "$timestamp" "$SINK_PARALLELISM" "$IS_SQL"
 else
   echo "Invalid 'MODE' provided. Please provide 'bounded' or 'unbounded'!"
   exit 1
