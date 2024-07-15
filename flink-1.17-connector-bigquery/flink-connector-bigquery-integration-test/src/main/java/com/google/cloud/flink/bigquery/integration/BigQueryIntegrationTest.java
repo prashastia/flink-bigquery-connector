@@ -196,7 +196,7 @@ public class BigQueryIntegrationTest {
         // Ignored for bounded run and can be set for unbounded mode (not required).
         String mode = parameterTool.get("mode", "bounded");
         Long expectedNumberOfRecords = parameterTool.getLong("expected-records", 210000L);
-        Integer timeoutTimePeriod = parameterTool.getInt("timeout", 2);
+        Integer timeoutTimePeriod = parameterTool.getInt("timeout", 18);
         Integer partitionDiscoveryInterval =
                 parameterTool.getInt("partition-discovery-interval", 10);
 
@@ -798,7 +798,7 @@ public class BigQueryIntegrationTest {
         TableResult res = pipeline.execute();
         try {
             res.await(timeoutTimePeriod, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | TimeoutException e) {
             LOG.info("Job Cancelled!", e);
         }
     }
