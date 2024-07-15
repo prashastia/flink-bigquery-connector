@@ -700,9 +700,9 @@ public class BigQueryIntegrationTest {
                 BigQueryTableSchemaProvider.getTableDescriptor(sinkTableConfig));
 
         // Insert the table sourceTable to the registered sinkTable
-        sourceTable.executeInsert("bigQuerySinkTable");
-
-        env.execute("Flink Table API BigQuery Bounded Read and Write Example");
+        TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
+        TableResult res = pipeline.execute();
+        res.await();
     }
 
     /**
