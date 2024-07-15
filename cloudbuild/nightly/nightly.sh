@@ -83,7 +83,7 @@ run_read_write_test(){
   PROPERTIES=${10}
   SINK_PARALLELISM=${11}
   # Take default value = false in case not provided.
-  IS_SQL=${12:=False}
+  IS_SQL=${12:-False}
   # Get the final region and the cluster name.
   export REGION=$(cat "$REGION_FILE")
   export CLUSTER_NAME=$(cat "$CLUSTER_FILE")
