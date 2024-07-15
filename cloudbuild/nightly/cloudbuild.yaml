@@ -121,7 +121,8 @@ steps:
 # 6. Table API Simple e2e test.
   - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
     id: 'e2e-bounded-table-api-simple-test'
-    waitFor: ['e2e-bounded-nested-schema-table-test']
+    waitFor: ['create-clusters-bounded-small-table']
+#    waitFor: ['e2e-bounded-nested-schema-table-test']
     entrypoint: 'bash'
     args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_bounded_table_api_simple_test']
     env:
