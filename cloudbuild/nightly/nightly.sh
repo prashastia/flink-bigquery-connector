@@ -82,12 +82,14 @@ run_read_write_test(){
   MODE=$9
   PROPERTIES=${10}
   SINK_PARALLELISM=${11}
+  # Take default value = false in case not provided.
+  IS_SQL=${12:=False}
   # Get the final region and the cluster name.
   export REGION=$(cat "$REGION_FILE")
   export CLUSTER_NAME=$(cat "$CLUSTER_FILE")
 
   # Run the simple bounded write table test.
-  source cloudbuild/nightly/scripts/table_write.sh "$PROJECT_ID" "$CLUSTER_NAME" "$REGION" "$PROJECT_NAME" "$DATASET_NAME" "$SOURCE_TABLE_NAME" "$DESTINATION_TABLE_NAME" "$IS_EXACTLY_ONCE_ENABLED" "$MODE" "$PROPERTIES" "$SINK_PARALLELISM"
+  source cloudbuild/nightly/scripts/table_write.sh "$PROJECT_ID" "$CLUSTER_NAME" "$REGION" "$PROJECT_NAME" "$DATASET_NAME" "$SOURCE_TABLE_NAME" "$DESTINATION_TABLE_NAME" "$IS_EXACTLY_ONCE_ENABLED" "$MODE" "$PROPERTIES" "$SINK_PARALLELISM" "$IS_SQL"
 }
 
 # Function to run the test to check BQ Table Read and Write.
@@ -141,11 +143,20 @@ case $STEP in
     exit
     ;;
 
+  # Run the nested schema table bounded e2e test.
+  e2e_bounded_table_api_simple_test)
+    IS_EXACTLY_ONCE_ENABLED=False
+    IS_SQL=True
+    run_read_write_test_table_api "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "$TABLE_NAME_SOURCE_SIMPLE_TABLE" "$TABLE_NAME_DESTINATION_SIMPLE_TABLE" "$IS_EXACTLY_ONCE_ENABLED" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB" "$SINK_PARALLELISM_SMALL_BOUNDED_JOB" "$IS_SQL"
+    exit
+    ;;
+
   # Run the query  bounded e2e test.
   e2e_bounded_query_test)
     run_read_only_test_delete_cluster "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "" "" "$QUERY" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB"
     exit
     ;;
+
 
   # Run the large table O(GB's) bounded e2e test.
   e2e_bounded_large_table_test)

@@ -26,6 +26,7 @@ IS_EXACTLY_ONCE_ENABLED=$8
 MODE=$9
 PROPERTIES=${10}
 SINK_PARALLELISM=${11}
+IS_SQL=${12}
 set -euxo pipefail
 gcloud config set project "$PROJECT_ID"
 
@@ -42,7 +43,12 @@ then
   echo "Bounded Mode!"
   # Modify the destination table name.
   DESTINATION_TABLE_NAME="$SOURCE_TABLE_NAME"-"$timestamp"
-  source cloudbuild/nightly/scripts/bounded_table_write.sh "$PROPERTIES" "$SINK_PARALLELISM"
+  if [ "$IS_SQL" == True ]
+  then
+    echo "SQL Mode is Enabled!"
+    DESTINATION_TABLE_NAME="$DESTINATION_TABLE_NAME"-"$IS_SQL"
+  fi
+  source cloudbuild/nightly/scripts/bounded_table_write.sh "$PROPERTIES" "$SINK_PARALLELISM" "$IS_SQL"
 elif [ "$MODE" == "unbounded" ]
 then
   echo "Unbounded Mode!"
