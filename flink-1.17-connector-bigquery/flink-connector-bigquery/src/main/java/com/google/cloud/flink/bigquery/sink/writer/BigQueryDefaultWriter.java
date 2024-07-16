@@ -65,11 +65,17 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
     public void write(IN element, Context context) {
         try {
             ByteString protoRow = getProtoRow(element);
+            logger.info("@prashastia: [write()] ");
             if (!fitsInAppendRequest(protoRow)) {
+                logger.info("@prashastia: !fitsInAppendRequest(protoRow)");
                 validateAppendResponses(false);
+                logger.info("@prashastia: after validateAppendResponses(protoRow)");
                 append();
+                logger.info("@prashastia: after append()");
             }
+            logger.info("@prashastiaL: Before: addToAppendRequest(protoRow)");
             addToAppendRequest(protoRow);
+            logger.info("@prashastiaL: After: addToAppendRequest(protoRow)");
         } catch (BigQuerySerializationException e) {
             logger.error(String.format("Unable to serialize record %s. Dropping it!", element), e);
         }
@@ -78,15 +84,20 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
     /** Asynchronously append to BigQuery table's default stream. */
     @Override
     ApiFuture sendAppendRequest(ProtoRows protoRows) {
+        logger.info("@prashastia: In sendAppendRequest()");
         if (streamWriter == null) {
+            logger.info("@prashastia: streamWriter==null()");
             streamWriter = createStreamWriter(true);
+            logger.info("@prashastia: streamwriter: " + streamWriter);
         }
+        logger.info("@prashastia: before streamWriter.append(protoRows)");
         return streamWriter.append(protoRows);
     }
 
     /** Throws a RuntimeException if an error is found with append response. */
     @Override
     void validateAppendResponse(ApiFuture<AppendRowsResponse> appendResponseFuture) {
+        logger.info("@prashastia: In BigQueryDefaultWriter.validateAppendResponses()");
         AppendRowsResponse response;
         try {
             response = appendResponseFuture.get();

@@ -29,6 +29,8 @@ import org.apache.flink.util.function.SerializableSupplier;
 import com.google.cloud.flink.bigquery.services.BigQueryServices;
 import com.google.cloud.flink.bigquery.table.config.BigQueryConnectorOptions;
 import com.google.cloud.flink.bigquery.table.config.BigQueryTableConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -42,6 +44,7 @@ public class BigQueryDynamicTableFactory
         implements DynamicTableSourceFactory, DynamicTableSinkFactory {
 
     public static final String IDENTIFIER = "bigquery";
+    private static final Logger LOG = LoggerFactory.getLogger(BigQueryDynamicTableFactory.class);
 
     private static SerializableSupplier<BigQueryServices> testingServices = null;
 
@@ -105,9 +108,11 @@ public class BigQueryDynamicTableFactory
     public DynamicTableSource createDynamicTableSource(Context context) {
         final FactoryUtil.TableFactoryHelper helper =
                 FactoryUtil.createTableFactoryHelper(this, context);
+        System.out.println("In createDynamicTableSource()!");
 
         BigQueryTableConfiguration config = new BigQueryTableConfiguration(helper.getOptions());
         helper.validate();
+        System.out.println("In helper.validate()!");
 
         if (config.isTestModeEnabled()) {
             config = config.withTestingServices(testingServices);
@@ -115,12 +120,13 @@ public class BigQueryDynamicTableFactory
 
         // Create an unbounded source.
         if (config.isUnboundedEnabled()) {
+            System.out.println("Unbounded source is created!");
             return new BigQueryDynamicTableSource(
                     config.toBigQueryReadOptions(),
                     context.getPhysicalRowDataType(),
                     Boundedness.CONTINUOUS_UNBOUNDED);
         }
-
+        System.out.println("bounded source is created!");
         return new BigQueryDynamicTableSource(
                 config.toBigQueryReadOptions(), context.getPhysicalRowDataType());
     }

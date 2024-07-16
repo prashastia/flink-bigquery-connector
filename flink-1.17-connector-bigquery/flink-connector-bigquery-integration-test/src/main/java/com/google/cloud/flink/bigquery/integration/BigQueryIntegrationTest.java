@@ -806,13 +806,12 @@ public class BigQueryIntegrationTest {
                 BigQueryTableSchemaProvider.getTableDescriptor(sinkTableConfig));
 
         // Insert the table sourceTable to the registered sinkTable
-        TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
-        TableResult res = pipeline.execute();
-        try {
-            res.await(timeoutTimePeriod, TimeUnit.MINUTES);
-        } catch (InterruptedException | TimeoutException e) {
-            LOG.info("Job Cancelled!", e);
-        }
+        sourceTable.executeInsert("bigQuerySinkTable");
+        //        try {
+        //            res.await(timeoutTimePeriod, TimeUnit.MINUTES);
+        //        } catch (InterruptedException | TimeoutException e) {
+        //            LOG.info("Job Cancelled!", e);
+        //        }
     }
 
     /** Function to flatmap the Table API source Catalog Table. */

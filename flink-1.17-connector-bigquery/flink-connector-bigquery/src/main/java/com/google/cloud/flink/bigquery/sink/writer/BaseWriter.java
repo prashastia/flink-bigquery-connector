@@ -55,8 +55,9 @@ import java.util.Queue;
  * validated lazily.
  *
  * <p>Serializer's "init" method is called in the writer's constructor because the resulting {@link
- * Descriptor} is not serializable and cannot be propagated to machines hosting writer instances.
- * Hence, this derivation of descriptors must be performed during writer initialization.
+ * com.google.protobuf.Descriptors.Descriptor} is not serializable and cannot be propagated to
+ * machines hosting writer instances. Hence, this derivation of descriptors must be performed during
+ * writer initialization.
  *
  * @param <IN> Type of records to be written to BigQuery.
  */
@@ -65,8 +66,8 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     // Multiply 0.95 to keep a buffer from exceeding payload limits.
-    private static final long MAX_APPEND_REQUEST_BYTES =
-            (long) (StreamWriter.getApiMaxRequestBytes() * 0.95);
+    private static final long MAX_APPEND_REQUEST_BYTES = 250000L;
+    //            (long) (StreamWriter.getApiMaxRequestBytes() * 0.95);
 
     // Number of bytes to be sent in the next append request.
     private long appendRequestSizeBytes;
@@ -138,8 +139,10 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
     /** Send append request to BigQuery storage and prepare for next append request. */
     void append() {
+        logger.info("@prashastia: In append()");
         ApiFuture responseFuture = sendAppendRequest(protoRowsBuilder.build());
         appendResponseFuturesQueue.add(responseFuture);
+        logger.info("@prashastia: After appendResponseFuturesQueue.add(responseFuture);");
         protoRowsBuilder.clear();
         appendRequestSizeBytes = 0L;
     }
@@ -158,6 +161,10 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
     /** Checks if serialized record can fit in current append request. */
     boolean fitsInAppendRequest(ByteString protoRow) {
+        logger.info("@prashastia: [SIZE] " + getProtoRowBytes(protoRow));
+        logger.info("@prashastia: [appendRequestSizeBytes] " + appendRequestSizeBytes);
+        logger.info(
+                "@prashastia: [TOTAL] " + (appendRequestSizeBytes + getProtoRowBytes(protoRow)));
         return appendRequestSizeBytes + getProtoRowBytes(protoRow) <= MAX_APPEND_REQUEST_BYTES;
     }
 
@@ -196,6 +203,7 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
      * order, we proceed to check the next response only after the previous one has arrived.
      */
     void validateAppendResponses(boolean waitForResponse) {
+        logger.info("@prashastia: In validateAppendResponses()");
         ApiFuture<AppendRowsResponse> appendResponseFuture;
         while ((appendResponseFuture = appendResponseFuturesQueue.peek()) != null) {
             if (waitForResponse || appendResponseFuture.isDone()) {
