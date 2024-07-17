@@ -29,8 +29,6 @@ import org.apache.flink.util.function.SerializableSupplier;
 import com.google.cloud.flink.bigquery.services.BigQueryServices;
 import com.google.cloud.flink.bigquery.table.config.BigQueryConnectorOptions;
 import com.google.cloud.flink.bigquery.table.config.BigQueryTableConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +42,6 @@ public class BigQueryDynamicTableFactory
         implements DynamicTableSourceFactory, DynamicTableSinkFactory {
 
     public static final String IDENTIFIER = "bigquery";
-    private static final Logger LOG = LoggerFactory.getLogger(BigQueryDynamicTableFactory.class);
 
     private static SerializableSupplier<BigQueryServices> testingServices = null;
 
