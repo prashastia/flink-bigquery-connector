@@ -44,6 +44,7 @@ import org.apache.flink.table.api.TablePipeline;
 import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.TableFunction;
+import org.apache.flink.table.types.logical.DecimalType;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
