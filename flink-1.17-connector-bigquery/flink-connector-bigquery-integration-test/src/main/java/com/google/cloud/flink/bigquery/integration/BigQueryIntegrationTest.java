@@ -39,9 +39,14 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.table.annotation.DataTypeHint;
 import org.apache.flink.table.annotation.FunctionHint;
+import org.apache.flink.table.api.DataTypes;
+import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TablePipeline;
+import org.apache.flink.table.api.TableConfig;
+import org.apache.flink.table.api.TableDescriptor;
 import org.apache.flink.table.api.TableResult;
+import org.apache.flink.table.api.Tumble;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.types.Row;
@@ -56,6 +61,7 @@ import com.google.cloud.flink.bigquery.sink.serializer.BigQuerySchemaProviderImp
 import com.google.cloud.flink.bigquery.sink.serializer.BigQueryTableSchemaProvider;
 import com.google.cloud.flink.bigquery.source.BigQuerySource;
 import com.google.cloud.flink.bigquery.source.config.BigQueryReadOptions;
+import com.google.cloud.flink.bigquery.table.config.BigQueryConnectorOptions;
 import com.google.cloud.flink.bigquery.table.config.BigQueryReadTableConfig;
 import com.google.cloud.flink.bigquery.table.config.BigQuerySinkTableConfig;
 import com.google.cloud.flink.bigquery.table.config.BigQueryTableConfig;
@@ -70,8 +76,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.apache.flink.table.api.Expressions.$;
-import static org.apache.flink.table.api.Expressions.call;
 import static org.apache.flink.table.api.Expressions.concat;
+import static org.apache.flink.table.api.Expressions.lit;
 
 /**
  * The Integration Test <b>is for internal use only</b>.
@@ -756,92 +762,69 @@ public class BigQueryIntegrationTest {
             Integer sinkParallelism)
             throws Exception {
 
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(CHECKPOINT_INTERVAL);
-        final StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
-        tEnv.createTemporarySystemFunction("func", MySQLFlatMapFunction.class);
+        EnvironmentSettings settings = EnvironmentSettings.newInstance().inStreamingMode().build();
 
-        // Declare Read Options.
-        BigQueryTableConfig readTableConfig =
-                BigQueryReadTableConfig.newBuilder()
-                        .table(sourceTableName)
-                        .project(sourceGcpProjectName)
-                        .dataset(sourceDatasetName)
-                        .testMode(false)
-                        .partitionDiscoveryInterval(partitionDiscoveryInterval)
-                        .boundedness(Boundedness.CONTINUOUS_UNBOUNDED)
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.enableCheckpointing(Duration.ofSeconds(5).toMillis());
+        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, settings);
+        TableConfig tableConfig = tableEnv.getConfig();
+        tableConfig.set("table.exec.source.idle-timeout", "5000");
+
+        final Schema schemaInput =
+                Schema.newBuilder()
+                        .column("text", DataTypes.STRING())
+                        .column("timestamp", DataTypes.TIMESTAMP_LTZ(3))
+                        .watermark("timestamp", $("timestamp").minus(lit(5).seconds()))
                         .build();
 
-        // Register the Source Table
-        tEnv.createTable(
-                "bigQuerySourceTable",
-                BigQueryTableSchemaProvider.getTableDescriptor(readTableConfig));
+        System.out.println("schema " + schemaInput);
 
-        // Fetch entries in this sourceTable
-        Table sourceTable =
-                tEnv.from("bigQuerySourceTable")
-                        .select($("*"))
-                        .flatMap(
-                                call(
-                                        "func",
-                                        Row.of($("unique_key"), $("name"), $("number"), $("ts"))))
-                        .as($("unique_key"), $("name"), $("number"), $("ts"));
+        TableDescriptor.Builder sourceBuilder =
+                TableDescriptor.forConnector("bigquery")
+                        .schema(schemaInput)
+                        .option(BigQueryConnectorOptions.DATASET, "testing_dataset")
+                        .option(BigQueryConnectorOptions.PROJECT, "bqrampupprashasti")
+                        .option(BigQueryConnectorOptions.TABLE, "qt")
+                        .option(BigQueryConnectorOptions.PARTITION_DISCOVERY_INTERVAL, 1)
+                        .option(BigQueryConnectorOptions.MODE, Boundedness.CONTINUOUS_UNBOUNDED);
+
+        tableEnv.createTemporaryTable("words", sourceBuilder.build());
+
+        System.out.println("words table " + tableEnv.from("words").getResolvedSchema());
 
         // Declare Write Options.
         BigQueryTableConfig sinkTableConfig =
                 BigQuerySinkTableConfig.newBuilder()
-                        .table(destTableName)
-                        .project(destGcpProjectName)
-                        .dataset(destDatasetName)
+                        .table("word_count")
+                        .project("bqrampupprashasti")
+                        .dataset("testing_dataset")
                         .testMode(false)
-                        .sinkParallelism(sinkParallelism)
                         .build();
-
-        if (isExactlyOnceEnabled) {
-            sinkTableConfig =
-                    BigQuerySinkTableConfig.newBuilder()
-                            .table(destTableName)
-                            .project(destGcpProjectName)
-                            .dataset(destDatasetName)
-                            .testMode(false)
-                            .deliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
-                            .sinkParallelism(sinkParallelism)
-                            .build();
-        }
-
         // Register the Sink Table
-        tEnv.createTable(
+        tableEnv.createTable(
                 "bigQuerySinkTable",
                 BigQueryTableSchemaProvider.getTableDescriptor(sinkTableConfig));
 
-        // Insert the table sourceTable to the registered sinkTable
-        TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
-        TableResult res = pipeline.execute();
-        try {
-            res.await(timeoutTimePeriod, TimeUnit.MINUTES);
-        } catch (InterruptedException | TimeoutException e) {
-            LOG.info("Job Cancelled!", e);
-        }
+        tableEnv.createTemporarySystemFunction("split", SplitWords.class);
+
+        Table res =
+                tableEnv.from("words")
+                        .select($("text"), $("timestamp"))
+                        .window(Tumble.over(lit(1).minute()).on($("timestamp")).as("minuteWindow"))
+                        .groupBy($("minuteWindow"), $("text"))
+                        .select($("text"), $("text").count().as("count"));
+        res.executeInsert("bigQuerySinkTable");
     }
 
-    /** Function to flatmap the Table API source Catalog Table. */
-    @FunctionHint(
-            input =
-                    @DataTypeHint(
-                            "ROW<`unique_key` STRING, `name` STRING, `number` BIGINT, `ts` TIMESTAMP(6)>"),
-            output =
-                    @DataTypeHint(
-                            "ROW<`unique_key` STRING, `name` STRING, `number` BIGINT, `ts` TIMESTAMP(6)>"))
-    public static class MySQLFlatMapFunction extends TableFunction<Row> {
-
-        public void eval(Row row) {
-            String str = (String) row.getField("name");
-            collect(
-                    Row.of(
-                            row.getField("unique_key"),
-                            str + "_write_test",
-                            row.getField("number"),
-                            row.getField("ts")));
+    /** Split words. */
+    @FunctionHint(output = @DataTypeHint("ROW<word STRING>"))
+    public static final class SplitWords extends TableFunction<Row> {
+        public void eval(String sentence) {
+            for (String split : sentence.split("[^\\p{L}]+")) {
+                if (!split.equals(",") && !split.isEmpty()) {
+                    collect(Row.of(split.toLowerCase()));
+                }
+            }
         }
     }
 

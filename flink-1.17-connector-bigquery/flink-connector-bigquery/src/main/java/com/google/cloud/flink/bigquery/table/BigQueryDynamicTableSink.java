@@ -101,6 +101,7 @@ public class BigQueryDynamicTableSink implements DynamicTableSink {
         if (this.parallelism == null) {
             return SinkV2Provider.of(BigQuerySink.get(this.sinkConfig, null));
         }
+        System.out.println("in getSinkRuntimeProvider()");
         return SinkV2Provider.of(BigQuerySink.get(this.sinkConfig, null), this.parallelism);
     }
 

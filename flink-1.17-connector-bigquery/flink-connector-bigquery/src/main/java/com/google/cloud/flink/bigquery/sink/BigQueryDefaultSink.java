@@ -32,10 +32,12 @@ class BigQueryDefaultSink extends BigQueryBaseSink {
 
     BigQueryDefaultSink(BigQuerySinkConfig sinkConfig) {
         super(sinkConfig);
+        System.out.println("BigQueryDefaultSink");
     }
 
     @Override
     public SinkWriter createWriter(InitContext context) {
+        System.out.println("BigQueryDefaultSink.createWriter()");
         checkParallelism(context.getNumberOfParallelSubtasks());
         return new BigQueryDefaultWriter(
                 context.getSubtaskId(), connectOptions, schemaProvider, serializer, tablePath);

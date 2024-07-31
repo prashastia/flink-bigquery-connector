@@ -392,6 +392,7 @@ public class AvroToProtoSerializer extends BigQueryProtoSerializer<GenericRecord
             if (value instanceof ReadableInstant) {
                 timestamp = TimeUnit.MILLISECONDS.toMicros(((ReadableInstant) value).getMillis());
             } else if (value instanceof Long) {
+                System.out.println("MICROS VALUE: " + value);
                 timestamp = (micros ? (Long) value : TimeUnit.MILLISECONDS.toMicros((Long) value));
             } else {
                 LOG.error(

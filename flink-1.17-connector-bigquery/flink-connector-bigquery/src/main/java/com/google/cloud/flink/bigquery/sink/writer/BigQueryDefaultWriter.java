@@ -57,6 +57,7 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
             BigQueryProtoSerializer serializer,
             String tablePath) {
         super(subtaskId, connectOptions, schemaProvider, serializer);
+        System.out.println("BigQueryDefaultWriter()");
         streamName = String.format("%s/streams/_default", tablePath);
     }
 
@@ -64,12 +65,19 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
     @Override
     public void write(IN element, Context context) {
         try {
+            System.out.println("BigQueryDefaultWriter.write()");
+            System.out.println("element " + element);
             ByteString protoRow = getProtoRow(element);
             if (!fitsInAppendRequest(protoRow)) {
+                System.out.println("!fitsInAppendRequest " + protoRow);
                 validateAppendResponses(false);
+                System.out.println("Before append() ");
                 append();
+                System.out.println("After append() ");
             }
+            System.out.println("Before addToAppendRequest");
             addToAppendRequest(protoRow);
+            System.out.println("After addToAppendRequest");
         } catch (BigQuerySerializationException e) {
             logger.error(String.format("Unable to serialize record %s. Dropping it!", element), e);
         }

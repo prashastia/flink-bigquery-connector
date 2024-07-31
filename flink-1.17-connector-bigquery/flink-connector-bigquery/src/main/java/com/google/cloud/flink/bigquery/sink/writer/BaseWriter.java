@@ -132,14 +132,19 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
     /** Add serialized record to append request. */
     void addToAppendRequest(ByteString protoRow) {
+        System.out.println("In addToAppendRequest");
         protoRowsBuilder.addSerializedRows(protoRow);
+        System.out.println("protoRowsBuilder: " + protoRowsBuilder);
         appendRequestSizeBytes += getProtoRowBytes(protoRow);
+        System.out.println("appendRequestSizeBytes: " + appendRequestSizeBytes);
     }
 
     /** Send append request to BigQuery storage and prepare for next append request. */
     void append() {
+        System.out.println("In append() ");
         ApiFuture responseFuture = sendAppendRequest(protoRowsBuilder.build());
         appendResponseFuturesQueue.add(responseFuture);
+        System.out.println("responseFuture: " + responseFuture);
         protoRowsBuilder.clear();
         appendRequestSizeBytes = 0L;
     }

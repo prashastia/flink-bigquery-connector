@@ -441,6 +441,22 @@ public class RowDataToProtoSerializerTest {
                 message.getField(descriptor.findFieldByNumber(7)));
     }
 
+    //    @Test
+    //    public void delete(){
+    //        LocalDateTime ldt = LocalDateTime.parse("6550-11-22T08:10:00.000");
+    //
+    //        LocalDateTime wanted = LocalDateTime.parse("2024-07-31T06:16:00");
+    //
+    //        System.out.println("ldt "+ ldt);
+    //        System.out.println("wanted "+ wanted.toEpochSecond(ZoneOffset.UTC));
+    //        long seconds = ldt.toEpochSecond(ZoneOffset.UTC);
+    //        System.out.println("seconds "+ seconds);
+    //
+    //        Timestamp ts = Timestamp.ofTimeMicroseconds(seconds*1000);
+    //        System.out.println("timestamp "+ ts);
+
+    //    }
+
     /**
      * Test to check <code>serialize()</code> for NULLABLE ARRAY of Type RECORD. <br>
      * Since BigQuery does not support OPTIONAL/NULLABLE arrays, descriptor is created with ARRAY of

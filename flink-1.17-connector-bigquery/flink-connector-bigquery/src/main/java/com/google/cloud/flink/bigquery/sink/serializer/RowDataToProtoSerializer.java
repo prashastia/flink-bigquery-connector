@@ -306,6 +306,7 @@ public class RowDataToProtoSerializer extends BigQueryProtoSerializer<RowData> {
                 }
             } else {
                 Object value = toProtoValue(fieldType, fieldNumber, element, fieldDescriptor);
+                System.out.println("VALUE: " + value);
                 builder.setField(fieldDescriptor, value);
             }
             fieldNumber += 1;
