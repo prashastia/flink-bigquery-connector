@@ -40,7 +40,6 @@ import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.table.annotation.DataTypeHint;
 import org.apache.flink.table.annotation.FunctionHint;
 import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TablePipeline;
 import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.TableFunction;
@@ -70,7 +69,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.apache.flink.table.api.Expressions.$;
-import static org.apache.flink.table.api.Expressions.call;
 import static org.apache.flink.table.api.Expressions.concat;
 
 /**
@@ -404,7 +402,7 @@ public class BigQueryIntegrationTest {
                                     public GenericRecord map(GenericRecord genericRecord)
                                             throws Exception {
                                         genericRecord.put(
-                                                "number", (long) genericRecord.get("number") + 1);
+                                                "name", genericRecord.get("name") + "_test");
                                         return genericRecord;
                                     }
                                 })
@@ -759,7 +757,6 @@ public class BigQueryIntegrationTest {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(CHECKPOINT_INTERVAL);
         final StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
-        tEnv.createTemporarySystemFunction("func", MySQLFlatMapFunction.class);
 
         // Declare Read Options.
         BigQueryTableConfig readTableConfig =
@@ -778,14 +775,13 @@ public class BigQueryIntegrationTest {
                 BigQueryTableSchemaProvider.getTableDescriptor(readTableConfig));
 
         // Fetch entries in this sourceTable
-        Table sourceTable =
-                tEnv.from("bigQuerySourceTable")
-                        .select($("*"))
-                        .flatMap(
-                                call(
-                                        "func",
-                                        Row.of($("unique_key"), $("name"), $("number"), $("ts"))))
-                        .as($("unique_key"), $("name"), $("number"), $("ts"));
+        //        Table sourceTable = tEnv.from("bigQuerySourceTable").select($("*"));
+        //                        .flatMap(
+        //                                call(
+        //                                        "func",
+        //                                        Row.of($("unique_key"), $("name"), $("number"),
+        // $("ts"))))
+        //                        .as($("unique_key"), $("name"), $("number"), $("ts"));
 
         // Declare Write Options.
         BigQueryTableConfig sinkTableConfig =
@@ -815,8 +811,11 @@ public class BigQueryIntegrationTest {
                 BigQueryTableSchemaProvider.getTableDescriptor(sinkTableConfig));
 
         // Insert the table sourceTable to the registered sinkTable
-        TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
-        TableResult res = pipeline.execute();
+        //        TablePipeline pipeline = sourceTable.insertInto("bigQuerySinkTable");
+        //        TableResult res = pipeline.execute();
+        TableResult res =
+                tEnv.executeSql(
+                        "Insert into bigQuerySinkTable " + "(Select * from bigQuerySourceTable);");
         try {
             res.await(timeoutTimePeriod, TimeUnit.MINUTES);
         } catch (InterruptedException | TimeoutException e) {

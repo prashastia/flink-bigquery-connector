@@ -117,7 +117,7 @@ public class BigQueryServicesImpl implements BigQueryServices {
     public static class StorageReadClientImpl implements StorageReadClient {
         private static final HeaderProvider USER_AGENT_HEADER_PROVIDER =
                 FixedHeaderProvider.create(
-                        "user-agent", "Apache_Flink_Java/" + FlinkVersion.current().toString());
+                        "User-Agent", "Apache_Flink_Java/" + FlinkVersion.current().toString());
 
         private final BigQueryReadClient client;
 
@@ -126,6 +126,7 @@ public class BigQueryServicesImpl implements BigQueryServices {
                     BigQueryReadSettings.newBuilder()
                             .setCredentialsProvider(
                                     FixedCredentialsProvider.create(options.getCredentials()))
+                            .setHeaderProvider(USER_AGENT_HEADER_PROVIDER)
                             .setTransportChannelProvider(
                                     BigQueryReadSettings.defaultGrpcTransportProviderBuilder()
                                             .setHeaderProvider(USER_AGENT_HEADER_PROVIDER)
@@ -180,7 +181,7 @@ public class BigQueryServicesImpl implements BigQueryServices {
     public static class StorageWriteClientImpl implements StorageWriteClient {
         private static final HeaderProvider USER_AGENT_HEADER_PROVIDER =
                 FixedHeaderProvider.create(
-                        "user-agent", "Apache_Flink_Java/" + FlinkVersion.current().toString());
+                        "User-Agent", "Apache_Flink_Java/" + FlinkVersion.current().toString());
 
         private final BigQueryWriteClient client;
 
@@ -189,6 +190,7 @@ public class BigQueryServicesImpl implements BigQueryServices {
                     BigQueryWriteSettings.newBuilder()
                             .setCredentialsProvider(
                                     FixedCredentialsProvider.create(options.getCredentials()))
+                            .setHeaderProvider(USER_AGENT_HEADER_PROVIDER)
                             .setTransportChannelProvider(
                                     BigQueryReadSettings.defaultGrpcTransportProviderBuilder()
                                             .setHeaderProvider(USER_AGENT_HEADER_PROVIDER)
@@ -224,6 +226,11 @@ public class BigQueryServicesImpl implements BigQueryServices {
                             .setMaxRetryDelay(Duration.ofSeconds(5)) // maximum delay before retry
                             .build();
             return StreamWriter.newBuilder(streamName, client)
+                    .setTraceId("@prashastia: Sample Testing Trace ID")
+                    .setChannelProvider(
+                            BigQueryReadSettings.defaultGrpcTransportProviderBuilder()
+                                    .setHeaderProvider(USER_AGENT_HEADER_PROVIDER)
+                                    .build())
                     .setEnableConnectionPool(enableConnectionPool)
                     .setRetrySettings(retrySettings)
                     .setWriterSchema(protoSchema)

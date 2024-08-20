@@ -133,6 +133,7 @@ public class BigQueryDynamicTableFactory
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
+        System.out.println("BigQueryDynamicTableFactory.createDynamicTableSink()");
         final FactoryUtil.TableFactoryHelper helper =
                 FactoryUtil.createTableFactoryHelper(this, context);
 

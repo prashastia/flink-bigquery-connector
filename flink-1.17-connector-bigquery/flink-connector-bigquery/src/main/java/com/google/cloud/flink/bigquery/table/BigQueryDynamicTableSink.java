@@ -47,6 +47,7 @@ public class BigQueryDynamicTableSink implements DynamicTableSink {
 
     public BigQueryDynamicTableSink(
             BigQuerySinkConfig sinkConfig, LogicalType logicalType, Integer parallelism) {
+        System.out.println("BigQueryDynamicTableSink.BigQueryDynamicTableSink()");
         this.logicalType = logicalType;
         Schema avroSchema =
                 BigQueryTableSchemaProvider.getAvroSchemaFromLogicalSchema(this.logicalType);
@@ -89,11 +90,14 @@ public class BigQueryDynamicTableSink implements DynamicTableSink {
 
     @Override
     public ChangelogMode getChangelogMode(ChangelogMode requestedMode) {
+        System.out.println(
+                "BigQueryDynamicTableSink.getChangelogMode(): " + requestedMode.toString());
         return ChangelogMode.insertOnly();
     }
 
     @Override
     public SinkRuntimeProvider getSinkRuntimeProvider(Context context) {
+        System.out.println("BigQueryDynamicTableSink.getSinkRuntimeProvider()");
         // init() should be called itself.
         // Set the logical type.
         ((RowDataToProtoSerializer) sinkConfig.getSerializer()).setLogicalType(this.logicalType);
@@ -106,6 +110,7 @@ public class BigQueryDynamicTableSink implements DynamicTableSink {
 
     @Override
     public DynamicTableSink copy() {
+        System.out.println("BigQueryDynamicTableSink.copy()");
         if (this.parallelism == null) {
             return new BigQueryDynamicTableSink(this.sinkConfig, this.logicalType);
         }
@@ -114,6 +119,7 @@ public class BigQueryDynamicTableSink implements DynamicTableSink {
 
     @Override
     public String asSummaryString() {
+        System.out.println("BigQueryDynamicTableSink.asSummaryString()");
         ResourceBundle connectorResources = ResourceBundle.getBundle("connector");
         return connectorResources.getString("connector");
     }

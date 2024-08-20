@@ -108,7 +108,8 @@ public class SplitDiscoverer {
             CreateReadSessionRequest.Builder builder =
                     CreateReadSessionRequest.newBuilder()
                             .setParent(parent)
-                            .setReadSession(sessionBuilder)
+                            .setReadSession(
+                                    sessionBuilder.setTraceId("@prashastia flink bq connector"))
                             .setMaxStreamCount(maxStreamCount);
 
             // request the session
