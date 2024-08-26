@@ -16,6 +16,8 @@
 
 package com.google.cloud.flink.bigquery.sink.writer;
 
+import org.apache.flink.api.connector.sink2.Sink;
+
 import com.google.api.core.ApiFuture;
 import com.google.cloud.bigquery.storage.v1.AppendRowsResponse;
 import com.google.cloud.bigquery.storage.v1.ProtoRows;
@@ -55,8 +57,9 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
             BigQueryConnectOptions connectOptions,
             BigQuerySchemaProvider schemaProvider,
             BigQueryProtoSerializer serializer,
-            String tablePath) {
-        super(subtaskId, connectOptions, schemaProvider, serializer);
+            String tablePath,
+            Sink.InitContext context) {
+        super(subtaskId, connectOptions, schemaProvider, serializer, context);
         streamName = String.format("%s/streams/_default", tablePath);
     }
 
@@ -91,6 +94,7 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
         try {
             response = appendResponseFuture.get();
         } catch (ExecutionException | InterruptedException e) {
+            this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter().inc();
             logger.error(
                     String.format(
                             "Exception while retrieving AppendRowsResponse in subtask %s",

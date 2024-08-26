@@ -17,7 +17,9 @@
 package com.google.cloud.flink.bigquery.sink.writer;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.bigquery.storage.v1.AppendRowsResponse;
@@ -80,12 +82,14 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
     StreamWriter streamWriter;
     String streamName;
+    SinkWriterMetricGroup sinkWriterMetricGroup;
 
     BaseWriter(
             int subtaskId,
             BigQueryConnectOptions connectOptions,
             BigQuerySchemaProvider schemaProvider,
-            BigQueryProtoSerializer serializer) {
+            BigQueryProtoSerializer serializer,
+            Sink.InitContext context) {
         this.subtaskId = subtaskId;
         this.connectOptions = connectOptions;
         this.protoSchema = getProtoSchema(schemaProvider);
@@ -94,6 +98,7 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         appendRequestSizeBytes = 0L;
         appendResponseFuturesQueue = new LinkedList<>();
         protoRowsBuilder = ProtoRows.newBuilder();
+        sinkWriterMetricGroup = context.metricGroup();
     }
 
     /** Append pending records and validate all remaining append responses. */
@@ -140,6 +145,9 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     void append() {
         ApiFuture responseFuture = sendAppendRequest(protoRowsBuilder.build());
         appendResponseFuturesQueue.add(responseFuture);
+        this.sinkWriterMetricGroup
+                .getNumRecordsSendCounter()
+                .inc(protoRowsBuilder.getSerializedRowsCount());
         protoRowsBuilder.clear();
         appendRequestSizeBytes = 0L;
     }

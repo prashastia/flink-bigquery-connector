@@ -134,14 +134,15 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
 
     @Override
     public RecordsWithSplitIds<GenericRecord> fetch() throws IOException {
+        LOG.info("@prashastia: BigQuerySourceSplitReader.Fetch()");
         if (closed) {
             throw new IllegalStateException("Can't fetch records from a closed split reader.");
         }
 
         RecordsBySplits.Builder<GenericRecord> respBuilder = new RecordsBySplits.Builder<>();
-
         // nothing to read has been assigned
         if (assignedSplits.isEmpty()) {
+            LOG.info("@prashastia: assignedSplits.isEmpty()");
             return respBuilder.build();
         }
 
@@ -158,6 +159,8 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
             return respBuilder.build();
         }
 
+        LOG.info("@prashastia: Before try()");
+
         BigQuerySourceSplit assignedSplit = assignedSplits.peek();
         int maxRecordsPerSplitFetch = readOptions.getMaxRecordsPerSplitFetch();
         int read = 0;
@@ -165,11 +168,15 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
         Boolean truncated = false;
 
         try {
+            LOG.info("@prashastia: Before In try()");
             if (readStreamIterator == null) {
+                LOG.info("@prashastia: readStreamIterator == null");
                 readStreamIterator = retrieveReadStream(assignedSplit).iterator();
             }
             Long itStartTime = System.currentTimeMillis();
+            LOG.info("@prashastia: Before: readStreamIterator.hasNext()");
             while (readStreamIterator.hasNext()) {
+                LOG.info("@prashastia: In: readStreamIterator.hasNext()");
                 ReadRowsResponse response = readStreamIterator.next();
                 if (!response.hasAvroRows()) {
                     LOG.info(
@@ -180,7 +187,9 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                             assignedSplit.getStreamName());
                 }
                 if (avroSchema == null) {
+                    LOG.info("@prashastia: In: avroSchema == null");
                     if (response.hasAvroSchema()) {
+                        LOG.info("@prashastia: In: response.hasAvroSchema()");
                         // this will happen only the first time we read from a particular stream
                         avroSchema =
                                 new Schema.Parser().parse(response.getAvroSchema().getSchema());
@@ -189,17 +198,20 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                                 "Avro schema not initialized and not available in the response.");
                     }
                 }
+                LOG.info("@prashastia: After if(avroSchema == null)");
                 Long decodeStart = System.currentTimeMillis();
                 List<GenericRecord> recordList =
                         GenericRecordReader.create(avroSchema).processRows(response.getAvroRows());
+                LOG.info("@prashastia: [207]");
                 Long decodeTimeMS = System.currentTimeMillis() - decodeStart;
                 LOG.debug(
                         "[subtask #{}][hostname %s] Iteration decoded records in {}ms from stream {}.",
                         readerContext.getIndexOfSubtask(),
                         decodeTimeMS,
                         assignedSplit.getStreamName());
-
+                LOG.info("@prashastia: [214]");
                 for (GenericRecord record : recordList) {
+                    LOG.info("@prashastia: [216]");
                     respBuilder.add(assignedSplit, record);
                     read++;
                     // check if the read count will be over the limit
@@ -207,10 +219,12 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                         break;
                     }
                 }
+                LOG.info("@prashastia: [224]");
                 // check if the read count will be over the limit
                 if (readerContext.willExceedLimit(read)) {
                     break;
                 }
+                LOG.info("@prashastia: [229]");
                 Long itTimeMs = System.currentTimeMillis() - itStartTime;
                 LOG.debug(
                         "[subtask #{}][hostname {}] Completed reading iteration in {}ms,"
@@ -229,13 +243,17 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                  * runtime). The read response record count has been observed to have 1024 elements.
                  */
                 if (read + recordList.size() > maxRecordsPerSplitFetch) {
+                    LOG.info("@prashastia: In: read + recordList.size() > maxRecordsPerSplitFetch");
                     truncated = true;
                     break;
                 }
             }
+            LOG.info("@prashastia: While() completed.");
             readSoFar += read;
+            LOG.info("@prashastia: readSoFar: " + readSoFar);
             // check if we finished to read the stream to finalize the split
             if (!truncated) {
+                LOG.info("@prashastia: In if(!truncated)");
                 readerContext.updateReadCount(readSoFar);
                 Long splitTimeMs = System.currentTimeMillis() - splitStartFetch;
                 this.readSplitTimeMetric.ifPresent(m -> m.update(splitTimeMs));
@@ -251,6 +269,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                 readStreamIterator = null;
                 respBuilder.addFinishedSplit(assignedSplit.splitId());
             } else {
+                LOG.info("@prashastia: In else()");
                 Long fetchTimeMs = System.currentTimeMillis() - fetchStartTime;
                 LOG.debug(
                         "[subtask #{}][hostname {}] Completed a partial fetch in {}ms,"
@@ -261,6 +280,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                         readSoFar,
                         assignedSplit.getStreamName());
             }
+            LOG.info("@prashastia: before respBuilder.build()");
             return respBuilder.build();
         } catch (Exception ex) {
             LOG.error(
