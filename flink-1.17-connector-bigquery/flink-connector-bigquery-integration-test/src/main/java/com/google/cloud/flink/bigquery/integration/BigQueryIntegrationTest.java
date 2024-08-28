@@ -18,6 +18,7 @@
 
 package com.google.cloud.flink.bigquery.integration;
 
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -414,7 +415,13 @@ public class BigQueryIntegrationTest {
             boundedStreamSink.setParallelism(sinkParallelism);
         }
 
-        env.execute("Flink BigQuery Bounded Read-Write Integration Test");
+        JobExecutionResult res = env.execute("Flink BigQuery Bounded Read-Write Integration Test");
+
+        try {
+            res.wait();
+        } catch (RuntimeException | InterruptedException ex) {
+            LOG.info("Job Cancelled!, Exception:\n", ex);
+        }
     }
 
     private static void runStreamingFlinkJobWithSink(

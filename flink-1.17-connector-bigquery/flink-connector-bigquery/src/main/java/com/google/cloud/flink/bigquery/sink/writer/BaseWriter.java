@@ -148,6 +148,13 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         this.sinkWriterMetricGroup
                 .getNumRecordsSendCounter()
                 .inc(protoRowsBuilder.getSerializedRowsCount());
+        this.sinkWriterMetricGroup.getNumBytesSendCounter().inc(getAppendRequestSizeBytes());
+        System.out.println(
+                "this.sinkWriterMetricGroup.getNumRecordsSendCounter updated: "
+                        + this.sinkWriterMetricGroup.getNumRecordsSendCounter().getCount());
+        System.out.println(
+                "this.sinkWriterMetricGroup.getNumBytesSendCounter updated: "
+                        + this.sinkWriterMetricGroup.getNumBytesSendCounter().getCount());
         protoRowsBuilder.clear();
         appendRequestSizeBytes = 0L;
     }

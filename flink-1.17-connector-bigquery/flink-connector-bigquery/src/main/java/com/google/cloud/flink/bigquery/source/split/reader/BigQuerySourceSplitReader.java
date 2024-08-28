@@ -96,7 +96,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
             // will start reading the stream from the beginning
             splitStartFetch = System.currentTimeMillis();
         }
-        LOG.debug(
+        LOG.info(
                 "[subtask #{}] Offset to fetch from {} for stream {}.",
                 readerContext.getIndexOfSubtask(),
                 readSoFar,
@@ -106,6 +106,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
 
     BigQueryServices.BigQueryServerStream<ReadRowsResponse> retrieveReadStream(
             BigQuerySourceSplit split) throws IOException {
+        LOG.info("@prashastia: retrieveReadStream");
         try (BigQueryServices.StorageReadClient client =
                 BigQueryServicesFactory.instance(readOptions.getBigQueryConnectOptions())
                         .storageRead()) {
@@ -202,16 +203,15 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                 Long decodeStart = System.currentTimeMillis();
                 List<GenericRecord> recordList =
                         GenericRecordReader.create(avroSchema).processRows(response.getAvroRows());
-                LOG.info("@prashastia: [207]");
+                LOG.info("@prashastia: recordListCreated.");
                 Long decodeTimeMS = System.currentTimeMillis() - decodeStart;
-                LOG.debug(
+                LOG.info(
                         "[subtask #{}][hostname %s] Iteration decoded records in {}ms from stream {}.",
                         readerContext.getIndexOfSubtask(),
                         decodeTimeMS,
                         assignedSplit.getStreamName());
-                LOG.info("@prashastia: [214]");
+                LOG.info("@prashastia: Before Looping over recordList");
                 for (GenericRecord record : recordList) {
-                    LOG.info("@prashastia: [216]");
                     respBuilder.add(assignedSplit, record);
                     read++;
                     // check if the read count will be over the limit
@@ -219,14 +219,13 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                         break;
                     }
                 }
-                LOG.info("@prashastia: [224]");
+                LOG.info("@prashastia: before checking .willLimitExceed()");
                 // check if the read count will be over the limit
                 if (readerContext.willExceedLimit(read)) {
                     break;
                 }
-                LOG.info("@prashastia: [229]");
                 Long itTimeMs = System.currentTimeMillis() - itStartTime;
-                LOG.debug(
+                LOG.info(
                         "[subtask #{}][hostname {}] Completed reading iteration in {}ms,"
                                 + " so far read {} from stream {}.",
                         readerContext.getIndexOfSubtask(),
@@ -271,7 +270,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
             } else {
                 LOG.info("@prashastia: In else()");
                 Long fetchTimeMs = System.currentTimeMillis() - fetchStartTime;
-                LOG.debug(
+                LOG.info(
                         "[subtask #{}][hostname {}] Completed a partial fetch in {}ms,"
                                 + " so far read {} from stream {}.",
                         readerContext.getIndexOfSubtask(),
@@ -308,7 +307,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
 
     @Override
     public void handleSplitsChanges(SplitsChange<BigQuerySourceSplit> splitsChanges) {
-        LOG.debug("Handle split changes {}.", splitsChanges);
+        LOG.info("Handle split changes {}.", splitsChanges);
 
         if (!(splitsChanges instanceof SplitsAddition)) {
             throw new UnsupportedOperationException(
@@ -322,7 +321,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
 
     @Override
     public void wakeUp() {
-        LOG.debug(
+        LOG.info(
                 "[subtask #{}][hostname %{}] Wake up called.",
                 readerContext.getIndexOfSubtask(), readerContext.getLocalHostName());
         // do nothing, for now
@@ -330,7 +329,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
 
     @Override
     public void close() throws Exception {
-        LOG.debug(
+        LOG.info(
                 "[subtask #{}][hostname {}] Close called, assigned splits {}.",
                 readerContext.getIndexOfSubtask(),
                 readerContext.getLocalHostName(),
