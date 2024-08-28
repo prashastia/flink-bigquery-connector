@@ -259,9 +259,13 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                     break;
                 }
                 LOG.info("@prashastia:Outside if");
-                LOG.info(
-                        "@prashastia:readStreamIterator.hasNext(): "
-                                + readStreamIterator.hasNext());
+                try {
+                    LOG.info(
+                            "@prashastia:readStreamIterator.hasNext(): "
+                                    + readStreamIterator.hasNext());
+                } catch (Exception e) {
+                    LOG.error("Problem to obtain readStreamInterator.next(): ", e);
+                }
             }
             LOG.info("@prashastia: While() completed.");
             readSoFar += read;
