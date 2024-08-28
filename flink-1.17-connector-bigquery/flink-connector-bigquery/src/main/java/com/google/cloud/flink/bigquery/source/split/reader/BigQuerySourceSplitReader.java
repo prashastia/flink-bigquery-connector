@@ -252,7 +252,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                  */
                 LOG.info("@prashastia:read: " + read);
                 LOG.info("@prashastia:recordList.size(): " + recordList.size());
-                LOG.info("@prashastia:SUM: " + read + recordList.size());
+                LOG.info("@prashastia: SUM: " + (read + recordList.size()));
                 if (read + recordList.size() > maxRecordsPerSplitFetch) {
                     LOG.info("@prashastia: In: read + recordList.size() > maxRecordsPerSplitFetch");
                     truncated = true;
@@ -260,9 +260,9 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                 }
                 LOG.info("@prashastia:Outside if");
                 try {
-                    LOG.info(
-                            "@prashastia:readStreamIterator.hasNext(): "
-                                    + readStreamIterator.hasNext());
+                    LOG.info("readStreamIterator: " + readStreamIterator);
+                    boolean vals = readStreamIterator.hasNext();
+                    LOG.info("@prashastia:readStreamIterator.hasNext(): " + vals);
                 } catch (Exception e) {
                     LOG.error("Problem to obtain readStreamInterator.next(): ", e);
                 }
