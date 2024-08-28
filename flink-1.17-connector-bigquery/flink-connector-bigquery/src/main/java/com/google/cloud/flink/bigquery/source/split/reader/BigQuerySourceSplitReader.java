@@ -181,7 +181,9 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                 ReadRowsResponse response = readStreamIterator.next();
                 LOG.info("@prashastia: ReadRowsResponse[Row Count]: " + response.getRowCount());
                 LOG.info("@prashastia: ReadRowsResponse[stats]: " + response.getStats());
-                LOG.info("@prashastia: ReadRowsResponse: " + response.toString());
+                LOG.info(
+                        "@prashastia: ReadRowsResponse[getSerializedSize]: "
+                                + response.getSerializedSize());
                 if (!response.hasAvroRows()) {
                     LOG.info(
                             "[subtask #{}][hostname {}] The response contained"
@@ -248,11 +250,18 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                  * results (enabling the checkpointing of the partial retrieval if wanted by the
                  * runtime). The read response record count has been observed to have 1024 elements.
                  */
+                LOG.info("@prashastia:read: " + read);
+                LOG.info("@prashastia:recordList.size(): " + recordList.size());
+                LOG.info("@prashastia:SUM: " + read + recordList.size());
                 if (read + recordList.size() > maxRecordsPerSplitFetch) {
                     LOG.info("@prashastia: In: read + recordList.size() > maxRecordsPerSplitFetch");
                     truncated = true;
                     break;
                 }
+                LOG.info("@prashastia:Outside if");
+                LOG.info(
+                        "@prashastia:readStreamIterator.hasNext(): "
+                                + readStreamIterator.hasNext());
             }
             LOG.info("@prashastia: While() completed.");
             readSoFar += read;
