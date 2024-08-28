@@ -179,6 +179,9 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
             while (readStreamIterator.hasNext()) {
                 LOG.info("@prashastia: In: readStreamIterator.hasNext()");
                 ReadRowsResponse response = readStreamIterator.next();
+                LOG.info("@prashastia: ReadRowsResponse[Row Count]: " + response.getRowCount());
+                LOG.info("@prashastia: ReadRowsResponse[stats]: " + response.getStats());
+                LOG.info("@prashastia: ReadRowsResponse: " + response.toString());
                 if (!response.hasAvroRows()) {
                     LOG.info(
                             "[subtask #{}][hostname {}] The response contained"
@@ -204,10 +207,12 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                 List<GenericRecord> recordList =
                         GenericRecordReader.create(avroSchema).processRows(response.getAvroRows());
                 LOG.info("@prashastia: recordListCreated.");
+                LOG.info("@prashastia: recordList[size]: " + recordList.size());
                 Long decodeTimeMS = System.currentTimeMillis() - decodeStart;
                 LOG.info(
-                        "[subtask #{}][hostname %s] Iteration decoded records in {}ms from stream {}.",
+                        "[subtask #{}][hostname {}] Iteration decoded records in {}ms from stream {}.",
                         readerContext.getIndexOfSubtask(),
+                        readerContext.getLocalHostName(),
                         decodeTimeMS,
                         assignedSplit.getStreamName());
                 LOG.info("@prashastia: Before Looping over recordList");
@@ -233,7 +238,9 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                         itTimeMs,
                         readSoFar + read,
                         assignedSplit.getStreamName());
+
                 itStartTime = System.currentTimeMillis();
+                LOG.info("itStartTime: " + itTimeMs);
                 /**
                  * Assuming the record list from the read session have the same size (true in most
                  * cases but the last one in the response stream) we check if we will be going over
