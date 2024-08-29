@@ -80,8 +80,6 @@ public interface BigQueryServices extends Serializable {
          * Cancels the stream, releasing any client- and server-side resources. This method may be
          * called multiple times and from any thread.
          */
-        boolean isReceiveReady();
-
         void cancel();
     }
 
