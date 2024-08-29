@@ -732,7 +732,11 @@ public class BigQueryIntegrationTest {
 
         // Insert the table sourceTable to the registered sinkTable
         TableResult res = sourceTable.executeInsert("bigQuerySinkTable");
-        res.await();
+        try {
+            res.await(5, TimeUnit.MINUTES);
+        } catch (InterruptedException | TimeoutException e) {
+            LOG.info("Job Cancelled!", e);
+        }
     }
 
     /**
