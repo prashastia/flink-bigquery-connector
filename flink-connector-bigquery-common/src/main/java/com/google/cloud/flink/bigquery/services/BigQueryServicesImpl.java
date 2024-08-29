@@ -103,7 +103,13 @@ public class BigQueryServicesImpl implements BigQueryServices {
         }
 
         @Override
+        public boolean isReceiveReady() {
+            return serverStream.isReceiveReady();
+        }
+
+        @Override
         public Iterator<T> iterator() {
+
             return serverStream.iterator();
         }
 

@@ -168,14 +168,25 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
         int read = 0;
         Long fetchStartTime = System.currentTimeMillis();
         Boolean truncated = false;
+        LOG.info(
+                "@prashastia: Assigned Split: "
+                        + assignedSplit
+                        + "\n"
+                        + "Max Records per Split Fetch: "
+                        + maxRecordsPerSplitFetch
+                        + "\n");
 
         try {
             LOG.info("@prashastia: Before In try()");
             if (readStreamIterator == null) {
                 LOG.info("@prashastia: readStreamIterator == null");
-                BigQueryServices.BigQueryServerStream<ReadRowsResponse> serverStream =
-                        retrieveReadStream(assignedSplit);
-                readStreamIterator = serverStream.iterator();
+                //                BigQueryServices.BigQueryServerStream<ReadRowsResponse>
+                // serverStream =
+                //                        retrieveReadStream(assignedSplit).iterator();
+                //                LOG.info("@prashastia: isReady?: " +
+                // serverStream.isReceiveReady());
+                readStreamIterator = retrieveReadStream(assignedSplit).iterator();
+                LOG.info("@prashastia: readStreamIterator: " + readStreamIterator.toString());
             }
             Long itStartTime = System.currentTimeMillis();
             LOG.info("@prashastia: Before: readStreamIterator.hasNext()");
