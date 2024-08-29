@@ -116,6 +116,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                             .setOffset(offsetToFetch(split))
                             .build();
 
+            LOG.info("@prashastia: offsetToFetch: " + offsetToFetch(split));
             return client.readRows(readRequest);
         } catch (Exception ex) {
             throw new IOException(
@@ -172,7 +173,9 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
             LOG.info("@prashastia: Before In try()");
             if (readStreamIterator == null) {
                 LOG.info("@prashastia: readStreamIterator == null");
-                readStreamIterator = retrieveReadStream(assignedSplit).iterator();
+                BigQueryServices.BigQueryServerStream<ReadRowsResponse> serverStream =
+                        retrieveReadStream(assignedSplit);
+                readStreamIterator = serverStream.iterator();
             }
             Long itStartTime = System.currentTimeMillis();
             LOG.info("@prashastia: Before: readStreamIterator.hasNext()");
@@ -261,6 +264,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                 LOG.info("@prashastia:Outside if");
                 try {
                     LOG.info("readStreamIterator: " + readStreamIterator);
+                    LOG.info("is split reader closed: " + closed);
                     boolean vals = readStreamIterator.hasNext();
                     LOG.info("@prashastia:readStreamIterator.hasNext(): " + vals);
                 } catch (Exception e) {

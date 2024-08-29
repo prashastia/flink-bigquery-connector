@@ -109,6 +109,7 @@ public class BigQueryServicesImpl implements BigQueryServices {
 
         @Override
         public void cancel() {
+            LOG.info("@prashastia: ServerStream is cancelled: " + serverStream);
             serverStream.cancel();
         }
     }
@@ -167,11 +168,14 @@ public class BigQueryServicesImpl implements BigQueryServices {
 
         @Override
         public BigQueryServerStream<ReadRowsResponse> readRows(ReadRowsRequest request) {
+            LOG.info("@prashastia: In readRows: [request] " + request);
+            LOG.info("@prashastia: readRowsCallable: " + client.readRowsCallable());
             return new BigQueryServerStreamImpl<>(client.readRowsCallable().call(request));
         }
 
         @Override
         public void close() {
+            LOG.info("@prashastia: Read Client is closed: " + client);
             client.close();
         }
     }
