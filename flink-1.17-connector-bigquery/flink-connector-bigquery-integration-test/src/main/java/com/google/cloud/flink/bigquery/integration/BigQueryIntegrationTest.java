@@ -419,8 +419,8 @@ public class BigQueryIntegrationTest {
 
         try {
             res.wait();
-        } catch (RuntimeException | InterruptedException ex) {
-            LOG.info("Job Cancelled!, Exception:\n", ex);
+        } catch (Throwable t) {
+            LOG.info("Job Cancelled!, Exception:\n", t);
         }
     }
 

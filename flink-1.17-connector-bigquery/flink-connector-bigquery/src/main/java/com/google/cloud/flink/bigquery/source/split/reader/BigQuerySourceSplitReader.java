@@ -36,6 +36,7 @@ import com.google.cloud.flink.bigquery.services.BigQueryServicesFactory;
 import com.google.cloud.flink.bigquery.source.config.BigQueryReadOptions;
 import com.google.cloud.flink.bigquery.source.reader.BigQuerySourceReaderContext;
 import com.google.cloud.flink.bigquery.source.split.BigQuerySourceSplit;
+import io.grpc.StatusRuntimeException;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
@@ -192,7 +193,14 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
             LOG.info("@prashastia: Before: readStreamIterator.hasNext()");
             while (readStreamIterator.hasNext()) {
                 LOG.info("@prashastia: In: readStreamIterator.hasNext()");
-                ReadRowsResponse response = readStreamIterator.next();
+                ReadRowsResponse response = null;
+                try {
+                    LOG.info("In try, before next()");
+                    response = readStreamIterator.next();
+                    LOG.info("In try, after next()");
+                } catch (Throwable t) {
+                    LOG.info("Error obtaining next " + t);
+                }
                 LOG.info("@prashastia: ReadRowsResponse[Row Count]: " + response.getRowCount());
                 LOG.info("@prashastia: ReadRowsResponse[stats]: " + response.getStats());
                 LOG.info(
@@ -278,7 +286,7 @@ public class BigQuerySourceSplitReader implements SplitReader<GenericRecord, Big
                     LOG.info("is split reader closed: " + closed);
                     boolean vals = readStreamIterator.hasNext();
                     LOG.info("@prashastia:readStreamIterator.hasNext(): " + vals);
-                } catch (Exception e) {
+                } catch (StatusRuntimeException e) {
                     LOG.error("Problem to obtain readStreamInterator.next(): ", e);
                 }
             }
