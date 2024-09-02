@@ -215,7 +215,8 @@ public class BigQueryDefaultWriterTest {
                 ApiFutures.immediateFuture(
                         AppendRowsResponse.newBuilder()
                                 .setError(Status.newBuilder().setCode(4).build())
-                                .build()));
+                                .build()),
+                1);
     }
 
     private BigQueryDefaultWriter createDefaultWriter(
