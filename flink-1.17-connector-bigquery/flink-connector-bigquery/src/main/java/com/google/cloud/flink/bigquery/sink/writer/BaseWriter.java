@@ -19,6 +19,7 @@ package com.google.cloud.flink.bigquery.sink.writer;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 
 import com.google.api.core.ApiFuture;
@@ -35,6 +36,7 @@ import com.google.cloud.flink.bigquery.sink.exceptions.BigQuerySerializationExce
 import com.google.cloud.flink.bigquery.sink.serializer.BigQueryProtoSerializer;
 import com.google.cloud.flink.bigquery.sink.serializer.BigQuerySchemaProvider;
 import com.google.protobuf.ByteString;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,24 +67,28 @@ import java.util.Queue;
 abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-
+    private static final Logger LOG = LoggerFactory.getLogger(BaseWriter.class);
     // Multiply 0.95 to keep a buffer from exceeding payload limits.
     private static final long MAX_APPEND_REQUEST_BYTES =
             (long) (StreamWriter.getApiMaxRequestBytes() * 0.95);
 
     // Number of bytes to be sent in the next append request.
     private long appendRequestSizeBytes;
+
+    // Number of Rows that were a part of the previous append request.
     private BigQueryServices.StorageWriteClient writeClient;
     protected final int subtaskId;
     private final BigQueryConnectOptions connectOptions;
     private final ProtoSchema protoSchema;
     private final BigQueryProtoSerializer serializer;
-    private final Queue<ApiFuture> appendResponseFuturesQueue;
+    private final Queue<Pair<ApiFuture<AppendRowsResponse>, Integer>> appendResponseFuturesQueue;
     private final ProtoRows.Builder protoRowsBuilder;
 
     StreamWriter streamWriter;
     String streamName;
     SinkWriterMetricGroup sinkWriterMetricGroup;
+
+    Counter successfullyAppendedRowsCount;
 
     BaseWriter(
             int subtaskId,
@@ -99,6 +105,10 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         appendResponseFuturesQueue = new LinkedList<>();
         protoRowsBuilder = ProtoRows.newBuilder();
         sinkWriterMetricGroup = context.metricGroup();
+        // Count of rows which are successfully appended to Bigquery and will be available for
+        // querying.
+        // Count of records successfully appended by the Storage Write API.
+        successfullyAppendedRowsCount = sinkWriterMetricGroup.counter("successfullyAppendedRows");
     }
 
     /** Append pending records and validate all remaining append responses. */
@@ -133,7 +143,8 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     abstract ApiFuture sendAppendRequest(ProtoRows protoRows);
 
     /** Checks append response for errors. */
-    abstract void validateAppendResponse(ApiFuture<AppendRowsResponse> appendResponseFuture);
+    abstract void validateAppendResponse(
+            ApiFuture<AppendRowsResponse> appendResponseFuture, Integer appendRequestRowsCount);
 
     /** Add serialized record to append request. */
     void addToAppendRequest(ByteString protoRow) {
@@ -144,7 +155,10 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     /** Send append request to BigQuery storage and prepare for next append request. */
     void append() {
         ApiFuture responseFuture = sendAppendRequest(protoRowsBuilder.build());
-        appendResponseFuturesQueue.add(responseFuture);
+        // Every request also contains the number of rows it is attempting to add.
+        appendResponseFuturesQueue.add(
+                Pair.of(responseFuture, protoRowsBuilder.getSerializedRowsCount()));
+
         this.sinkWriterMetricGroup
                 .getNumRecordsSendCounter()
                 .inc(protoRowsBuilder.getSerializedRowsCount());
@@ -155,6 +169,7 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         System.out.println(
                 "this.sinkWriterMetricGroup.getNumBytesSendCounter updated: "
                         + this.sinkWriterMetricGroup.getNumBytesSendCounter().getCount());
+
         protoRowsBuilder.clear();
         appendRequestSizeBytes = 0L;
     }
@@ -211,11 +226,12 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
      * order, we proceed to check the next response only after the previous one has arrived.
      */
     void validateAppendResponses(boolean waitForResponse) {
-        ApiFuture<AppendRowsResponse> appendResponseFuture;
+        Pair<ApiFuture<AppendRowsResponse>, Integer> appendResponseFuture;
         while ((appendResponseFuture = appendResponseFuturesQueue.peek()) != null) {
-            if (waitForResponse || appendResponseFuture.isDone()) {
+            if (waitForResponse || appendResponseFuture.getLeft().isDone()) {
                 appendResponseFuturesQueue.poll();
-                validateAppendResponse(appendResponseFuture);
+                validateAppendResponse(
+                        appendResponseFuture.getLeft(), appendResponseFuture.getRight());
             } else {
                 break;
             }
@@ -236,7 +252,7 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     }
 
     @Internal
-    Queue<ApiFuture> getAppendResponseFuturesQueue() {
+    Queue<Pair<ApiFuture<AppendRowsResponse>, Integer>> getAppendResponseFuturesQueue() {
         return new LinkedList(appendResponseFuturesQueue);
     }
 
