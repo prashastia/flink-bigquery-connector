@@ -16,6 +16,8 @@
 
 package com.google.cloud.flink.bigquery.sink.writer;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.apache.flink.api.connector.sink2.Sink;
 
 import com.google.api.core.ApiFuture;
@@ -90,16 +92,17 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
 
     /** Throws a RuntimeException if an error is found with append response. */
     @Override
-    void validateAppendResponse(
-            ApiFuture<AppendRowsResponse> appendResponseFuture, Integer appendRequestRowsCount) {
+    void validateAppendResponse(Pair<ApiFuture<AppendRowsResponse>, Long> appendResponseFuture) {
         AppendRowsResponse response;
+        long expectedOffset = appendResponseFuture.getRight();
+        long currentRequestRecordCount = expectedOffset - this.successfullyAppendedRowsCount.getCount();
         try {
-            response = appendResponseFuture.get();
+            response = appendResponseFuture.getLeft().get();
         } catch (ExecutionException | InterruptedException e) {
-            this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter().inc(appendRequestRowsCount);
+            // Case 1: we did not get any response:
+            numRecordsSendErrorsCounter.inc(currentRequestRecordCount);
             System.out.println(
-                    "this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter() updated!: "
-                            + this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter());
+                    "numRecordsSendErrorsCounter updated: " + numRecordsSendErrorsCounter.getCount());
 
             logger.error(
                     String.format(
@@ -109,7 +112,7 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
             throw new BigQueryConnectorException(
                     "Error getting response for BigQuery write API", e);
         }
-        if (successfullyAppendedRowsCount.getCount() > 200000) {
+        if (successfullyAppendedRowsCount.getCount() > 5000000) {
             response =
                     AppendRowsResponse.newBuilder()
                             .setError(
@@ -120,12 +123,10 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
                             .build();
         }
         if (response.hasError()) {
-            // All the records failed.
-            // .append() - either all fail or all succeed, it is an atomic request.
-            this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter().inc(appendRequestRowsCount);
+            // Case 2: Append Fails, All the records failed. it is an atomic request.
+            numRecordsSendErrorsCounter.inc(currentRequestRecordCount);
             System.out.println(
-                    "this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter() updated!: "
-                            + this.sinkWriterMetricGroup.getNumRecordsSendErrorsCounter());
+                    "numRecordsSendErrorsCounter updated: " + numRecordsSendErrorsCounter.getCount());
             logger.error(
                     String.format(
                             "Request to AppendRows failed in subtask %s with error %s",
@@ -135,11 +136,12 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
                             "Exception while writing to BigQuery table: %s",
                             response.getError().getMessage()));
         }
+        // Case 3: Append is successful.
         // it would arrive here only if the response was received and there were no errors.
         // the request succeeded without errors (records are in BQ :))
-        this.successfullyAppendedRowsCount.inc(appendRequestRowsCount);
+        successfullyAppendedRowsCount.inc(currentRequestRecordCount);
         System.out.println(
-                "this.successfullyAppendedRowsCount updated!: "
-                        + this.successfullyAppendedRowsCount);
+                "successfullyAppendedRowsCount updated!: "
+                        + successfullyAppendedRowsCount.getCount());
     }
 }

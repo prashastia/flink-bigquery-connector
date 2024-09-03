@@ -81,14 +81,19 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     private final BigQueryConnectOptions connectOptions;
     private final ProtoSchema protoSchema;
     private final BigQueryProtoSerializer serializer;
-    private final Queue<Pair<ApiFuture<AppendRowsResponse>, Integer>> appendResponseFuturesQueue;
+
+    // Contains the ApiFuture and the supposed response.
+    private final Queue<Pair<ApiFuture<AppendRowsResponse>, Long>> appendResponseFuturesQueue;
     private final ProtoRows.Builder protoRowsBuilder;
 
     StreamWriter streamWriter;
     String streamName;
+    //TODO: Restore the state correctly.
     SinkWriterMetricGroup sinkWriterMetricGroup;
-
     Counter successfullyAppendedRowsCount;
+    Counter numRecordsSendCounter;
+    Counter numBytesSendCounter;
+    Counter numRecordsSendErrorsCounter;
 
     BaseWriter(
             int subtaskId,
@@ -109,6 +114,9 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         // querying.
         // Count of records successfully appended by the Storage Write API.
         successfullyAppendedRowsCount = sinkWriterMetricGroup.counter("successfullyAppendedRows");
+        numRecordsSendCounter = sinkWriterMetricGroup.getNumRecordsSendCounter();
+        numBytesSendCounter = sinkWriterMetricGroup.getNumBytesSendCounter();
+        numRecordsSendErrorsCounter = sinkWriterMetricGroup.getNumRecordsSendErrorsCounter();
     }
 
     /** Append pending records and validate all remaining append responses. */
@@ -144,7 +152,7 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
     /** Checks append response for errors. */
     abstract void validateAppendResponse(
-            ApiFuture<AppendRowsResponse> appendResponseFuture, Integer appendRequestRowsCount);
+            Pair<ApiFuture<AppendRowsResponse>, Long> appendResponseFuture);
 
     /** Add serialized record to append request. */
     void addToAppendRequest(ByteString protoRow) {
@@ -157,18 +165,18 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         ApiFuture responseFuture = sendAppendRequest(protoRowsBuilder.build());
         // Every request also contains the number of rows it is attempting to add.
         appendResponseFuturesQueue.add(
-                Pair.of(responseFuture, protoRowsBuilder.getSerializedRowsCount()));
+                Pair.of(responseFuture,
+                        this.successfullyAppendedRowsCount.getCount() + protoRowsBuilder.getSerializedRowsCount()));
 
-        this.sinkWriterMetricGroup
-                .getNumRecordsSendCounter()
-                .inc(protoRowsBuilder.getSerializedRowsCount());
-        this.sinkWriterMetricGroup.getNumBytesSendCounter().inc(getAppendRequestSizeBytes());
+        // ------ Increment hte Flink metric Group Counters
+        numRecordsSendCounter.inc(protoRowsBuilder.getSerializedRowsCount());
+        numBytesSendCounter.inc(getAppendRequestSizeBytes());
+
         System.out.println(
-                "this.sinkWriterMetricGroup.getNumRecordsSendCounter updated: "
-                        + this.sinkWriterMetricGroup.getNumRecordsSendCounter().getCount());
+                "numRecordsSendCounter updated: " + numRecordsSendCounter.getCount());
         System.out.println(
-                "this.sinkWriterMetricGroup.getNumBytesSendCounter updated: "
-                        + this.sinkWriterMetricGroup.getNumBytesSendCounter().getCount());
+                "numBytesSendCounter updated: " + numBytesSendCounter.getCount());
+        // ----------------
 
         protoRowsBuilder.clear();
         appendRequestSizeBytes = 0L;
@@ -226,12 +234,11 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
      * order, we proceed to check the next response only after the previous one has arrived.
      */
     void validateAppendResponses(boolean waitForResponse) {
-        Pair<ApiFuture<AppendRowsResponse>, Integer> appendResponseFuture;
+        Pair<ApiFuture<AppendRowsResponse>, Long> appendResponseFuture;
         while ((appendResponseFuture = appendResponseFuturesQueue.peek()) != null) {
             if (waitForResponse || appendResponseFuture.getLeft().isDone()) {
                 appendResponseFuturesQueue.poll();
-                validateAppendResponse(
-                        appendResponseFuture.getLeft(), appendResponseFuture.getRight());
+                validateAppendResponse(appendResponseFuture);
             } else {
                 break;
             }

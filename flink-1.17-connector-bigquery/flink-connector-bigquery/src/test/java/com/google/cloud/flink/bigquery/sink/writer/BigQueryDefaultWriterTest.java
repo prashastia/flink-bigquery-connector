@@ -16,6 +16,8 @@
 
 package com.google.cloud.flink.bigquery.sink.writer;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 
@@ -212,11 +214,12 @@ public class BigQueryDefaultWriterTest {
         BigQueryDefaultWriter defaultWriter =
                 createDefaultWriter(FakeBigQuerySerializer.getEmptySerializer(), null);
         defaultWriter.validateAppendResponse(
+                Pair.of(
                 ApiFutures.immediateFuture(
                         AppendRowsResponse.newBuilder()
                                 .setError(Status.newBuilder().setCode(4).build())
                                 .build()),
-                1);
+                1));
     }
 
     private BigQueryDefaultWriter createDefaultWriter(
