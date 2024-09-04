@@ -66,8 +66,7 @@ import java.util.Queue;
  */
 abstract class BaseWriter<IN> implements SinkWriter<IN> {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
-    private static final Logger LOG = LoggerFactory.getLogger(BaseWriter.class);
+    protected final Logger logger = LoggerFactory.getLogger(BaseWriter.class);
     // Multiply 0.95 to keep a buffer from exceeding payload limits.
     private static final long MAX_APPEND_REQUEST_BYTES =
             (long) (StreamWriter.getApiMaxRequestBytes() * 0.95);
@@ -82,18 +81,17 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     private final ProtoSchema protoSchema;
     private final BigQueryProtoSerializer serializer;
 
-    // Contains the ApiFuture and the supposed response.
+    // Contains the ApiFuture and the expected offset.
     private final Queue<Pair<ApiFuture<AppendRowsResponse>, Long>> appendResponseFuturesQueue;
     private final ProtoRows.Builder protoRowsBuilder;
+    private long previousOffset;
+    private final Counter numRecordsSendCounter;
+    private final Counter numBytesSendCounter;
 
     StreamWriter streamWriter;
     String streamName;
-    //TODO: Restore the state correctly.
-    SinkWriterMetricGroup sinkWriterMetricGroup;
-    Counter successfullyAppendedRowsCount;
-    Counter numRecordsSendCounter;
-    Counter numBytesSendCounter;
-    Counter numRecordsSendErrorsCounter;
+    final Counter successfullyAppendedRowsCount;
+    final Counter numRecordsSendErrorCounter;
 
     BaseWriter(
             int subtaskId,
@@ -109,14 +107,15 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         appendRequestSizeBytes = 0L;
         appendResponseFuturesQueue = new LinkedList<>();
         protoRowsBuilder = ProtoRows.newBuilder();
-        sinkWriterMetricGroup = context.metricGroup();
+        SinkWriterMetricGroup sinkWriterMetricGroup = context.metricGroup();
         // Count of rows which are successfully appended to Bigquery and will be available for
         // querying.
         // Count of records successfully appended by the Storage Write API.
         successfullyAppendedRowsCount = sinkWriterMetricGroup.counter("successfullyAppendedRows");
         numRecordsSendCounter = sinkWriterMetricGroup.getNumRecordsSendCounter();
         numBytesSendCounter = sinkWriterMetricGroup.getNumBytesSendCounter();
-        numRecordsSendErrorsCounter = sinkWriterMetricGroup.getNumRecordsSendErrorsCounter();
+        numRecordsSendErrorCounter = sinkWriterMetricGroup.getNumRecordsSendErrorsCounter();
+        previousOffset = 0;
     }
 
     /** Append pending records and validate all remaining append responses. */
@@ -163,19 +162,19 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     /** Send append request to BigQuery storage and prepare for next append request. */
     void append() {
         ApiFuture responseFuture = sendAppendRequest(protoRowsBuilder.build());
+        long rowsNext = protoRowsBuilder.getSerializedRowsCount();
         // Every request also contains the number of rows it is attempting to add.
-        appendResponseFuturesQueue.add(
-                Pair.of(responseFuture,
-                        this.successfullyAppendedRowsCount.getCount() + protoRowsBuilder.getSerializedRowsCount()));
-
-        // ------ Increment hte Flink metric Group Counters
-        numRecordsSendCounter.inc(protoRowsBuilder.getSerializedRowsCount());
+        appendResponseFuturesQueue.add(Pair.of(responseFuture, previousOffset + rowsNext));
+        // ------ Increment the Flink metric Group Counters
+        numRecordsSendCounter.inc(rowsNext);
         numBytesSendCounter.inc(getAppendRequestSizeBytes());
+        previousOffset += rowsNext;
 
-        System.out.println(
-                "numRecordsSendCounter updated: " + numRecordsSendCounter.getCount());
-        System.out.println(
-                "numBytesSendCounter updated: " + numBytesSendCounter.getCount());
+        logger.debug(
+                String.format(
+                        "numRecordsSendCounter updated: %d", numRecordsSendCounter.getCount()));
+        logger.debug(
+                String.format("numBytesSendCounter updated: %d", numBytesSendCounter.getCount()));
         // ----------------
 
         protoRowsBuilder.clear();

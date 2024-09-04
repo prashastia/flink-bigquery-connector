@@ -16,8 +16,6 @@
 
 package com.google.cloud.flink.bigquery.sink.writer;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import org.apache.flink.api.connector.sink2.Sink;
 
 import com.google.api.core.ApiFuture;
@@ -29,7 +27,7 @@ import com.google.cloud.flink.bigquery.sink.exceptions.BigQuerySerializationExce
 import com.google.cloud.flink.bigquery.sink.serializer.BigQueryProtoSerializer;
 import com.google.cloud.flink.bigquery.sink.serializer.BigQuerySchemaProvider;
 import com.google.protobuf.ByteString;
-import com.google.rpc.Status;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.concurrent.ExecutionException;
 
@@ -95,14 +93,17 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
     void validateAppendResponse(Pair<ApiFuture<AppendRowsResponse>, Long> appendResponseFuture) {
         AppendRowsResponse response;
         long expectedOffset = appendResponseFuture.getRight();
-        long currentRequestRecordCount = expectedOffset - this.successfullyAppendedRowsCount.getCount();
+        long currentRequestRecordCount =
+                expectedOffset - this.successfullyAppendedRowsCount.getCount();
         try {
             response = appendResponseFuture.getLeft().get();
         } catch (ExecutionException | InterruptedException e) {
             // Case 1: we did not get any response:
-            numRecordsSendErrorsCounter.inc(currentRequestRecordCount);
-            System.out.println(
-                    "numRecordsSendErrorsCounter updated: " + numRecordsSendErrorsCounter.getCount());
+            numRecordsSendErrorCounter.inc(currentRequestRecordCount);
+            logger.debug(
+                    String.format(
+                            "numRecordsSendErrorsCounter updated: %d",
+                            numRecordsSendErrorCounter.getCount()));
 
             logger.error(
                     String.format(
@@ -112,21 +113,13 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
             throw new BigQueryConnectorException(
                     "Error getting response for BigQuery write API", e);
         }
-        if (successfullyAppendedRowsCount.getCount() > 5000000) {
-            response =
-                    AppendRowsResponse.newBuilder()
-                            .setError(
-                                    Status.newBuilder()
-                                            .setCode(4)
-                                            .setMessage("Demo Failure for Usage Metrics")
-                                            .build())
-                            .build();
-        }
         if (response.hasError()) {
             // Case 2: Append Fails, All the records failed. it is an atomic request.
-            numRecordsSendErrorsCounter.inc(currentRequestRecordCount);
-            System.out.println(
-                    "numRecordsSendErrorsCounter updated: " + numRecordsSendErrorsCounter.getCount());
+            numRecordsSendErrorCounter.inc(currentRequestRecordCount);
+            logger.debug(
+                    String.format(
+                            "numRecordsSendErrorsCounter updated: %d",
+                            numRecordsSendErrorCounter.getCount()));
             logger.error(
                     String.format(
                             "Request to AppendRows failed in subtask %s with error %s",
@@ -139,9 +132,10 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
         // Case 3: Append is successful.
         // it would arrive here only if the response was received and there were no errors.
         // the request succeeded without errors (records are in BQ :))
-        successfullyAppendedRowsCount.inc(currentRequestRecordCount);
-        System.out.println(
-                "successfullyAppendedRowsCount updated!: "
-                        + successfullyAppendedRowsCount.getCount());
+        this.successfullyAppendedRowsCount.inc(currentRequestRecordCount);
+        logger.debug(
+                String.format(
+                        "successfullyAppendedRowsCount updated: %d",
+                        successfullyAppendedRowsCount.getCount()));
     }
 }
