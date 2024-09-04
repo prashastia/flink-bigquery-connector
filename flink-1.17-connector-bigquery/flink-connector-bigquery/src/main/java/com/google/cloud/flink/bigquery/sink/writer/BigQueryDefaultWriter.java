@@ -94,16 +94,16 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
         AppendRowsResponse response;
         long expectedOffset = appendResponseFuture.getRight();
         long currentRequestRecordCount =
-                expectedOffset - this.successfullyAppendedRowsCount.getCount();
+                expectedOffset - this.successfullyAppendedRecordsCounter.getCount();
         try {
             response = appendResponseFuture.getLeft().get();
         } catch (ExecutionException | InterruptedException e) {
             // Case 1: we did not get any response:
-            numRecordsSendErrorCounter.inc(currentRequestRecordCount);
+            this.numRecordsSendErrorCounter.inc(currentRequestRecordCount);
             logger.debug(
                     String.format(
                             "numRecordsSendErrorsCounter updated: %d",
-                            numRecordsSendErrorCounter.getCount()));
+                            this.numRecordsSendErrorCounter.getCount()));
 
             logger.error(
                     String.format(
@@ -113,23 +113,23 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
             throw new BigQueryConnectorException(
                     "Error getting response for BigQuery write API", e);
         }
-//        if (successfullyAppendedRowsCount.getCount() > 200000) {
-//            response =
-//                    AppendRowsResponse.newBuilder()
-//                            .setError(
-//                                    Status.newBuilder()
-//                                            .setCode(4)
-//                                            .setMessage("Demo Failure for Usage Metrics")
-//                                            .build())
-//                            .build();
-//        }
+        //        if (successfullyAppendedRowsCount.getCount() > 200000) {
+        //            response =
+        //                    AppendRowsResponse.newBuilder()
+        //                            .setError(
+        //                                    Status.newBuilder()
+        //                                            .setCode(4)
+        //                                            .setMessage("Demo Failure for Usage Metrics")
+        //                                            .build())
+        //                            .build();
+        //        }
         if (response.hasError()) {
             // Case 2: Append Fails, All the records failed. it is an atomic request.
-            numRecordsSendErrorCounter.inc(currentRequestRecordCount);
+            this.numRecordsSendErrorCounter.inc(currentRequestRecordCount);
             logger.debug(
                     String.format(
                             "numRecordsSendErrorsCounter updated: %d",
-                            numRecordsSendErrorCounter.getCount()));
+                            this.numRecordsSendErrorCounter.getCount()));
             logger.error(
                     String.format(
                             "Request to AppendRows failed in subtask %s with error %s",
@@ -142,10 +142,10 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
         // Case 3: Append is successful.
         // it would arrive here only if the response was received and there were no errors.
         // the request succeeded without errors (records are in BQ :))
-        this.successfullyAppendedRowsCount.inc(currentRequestRecordCount);
+        this.successfullyAppendedRecordsCounter.inc(currentRequestRecordCount);
         logger.debug(
                 String.format(
                         "successfullyAppendedRowsCount updated: %d",
-                        successfullyAppendedRowsCount.getCount()));
+                        this.successfullyAppendedRecordsCounter.getCount()));
     }
 }

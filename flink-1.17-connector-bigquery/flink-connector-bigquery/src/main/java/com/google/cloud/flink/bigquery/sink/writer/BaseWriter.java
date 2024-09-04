@@ -84,16 +84,15 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     // Contains the ApiFuture and the expected offset.
     private final Queue<Pair<ApiFuture<AppendRowsResponse>, Long>> appendResponseFuturesQueue;
     private final ProtoRows.Builder protoRowsBuilder;
+
+    // Counters for metric reporting
     private long previousOffset;
     private final Counter numRecordsSendCounter;
     private final Counter numBytesSendCounter;
-
+    final Counter successfullyAppendedRecordsCounter;
+    final Counter numRecordsSendErrorCounter;
     StreamWriter streamWriter;
     String streamName;
-    final Counter successfullyAppendedRowsCount;
-    final Counter numRecordsSendErrorCounter;
-
-    Counter successfullyAppendedRowsCount;
 
     BaseWriter(
             int subtaskId,
@@ -113,7 +112,8 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         // Count of rows which are successfully appended to Bigquery and will be available for
         // querying.
         // Count of records successfully appended by the Storage Write API.
-        successfullyAppendedRowsCount = sinkWriterMetricGroup.counter("successfullyAppendedRows");
+        successfullyAppendedRecordsCounter =
+                sinkWriterMetricGroup.counter("successfullyAppendedRecords");
         numRecordsSendCounter = sinkWriterMetricGroup.getNumRecordsSendCounter();
         numBytesSendCounter = sinkWriterMetricGroup.getNumBytesSendCounter();
         numRecordsSendErrorCounter = sinkWriterMetricGroup.getNumRecordsSendErrorsCounter();
@@ -239,8 +239,7 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         while ((appendResponseFuture = appendResponseFuturesQueue.peek()) != null) {
             if (waitForResponse || appendResponseFuture.getLeft().isDone()) {
                 appendResponseFuturesQueue.poll();
-                validateAppendResponse(
-                        appendResponseFuture.getLeft(), appendResponseFuture.getRight());
+                validateAppendResponse(appendResponseFuture);
             } else {
                 break;
             }
