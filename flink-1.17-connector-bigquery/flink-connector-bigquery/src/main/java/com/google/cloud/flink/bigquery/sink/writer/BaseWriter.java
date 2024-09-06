@@ -91,6 +91,8 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
     private final Counter numBytesSendCounter;
     final Counter successfullyAppendedRecordsCounter;
     final Counter numRecordsSendErrorCounter;
+    final Counter numRecordsInSinceChkptCounter;
+    final Counter successfullyAppendedRecordsSinceChkptCounter;
     StreamWriter streamWriter;
     String streamName;
 
@@ -114,6 +116,8 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         // Count of records successfully appended by the Storage Write API.
         successfullyAppendedRecordsCounter =
                 sinkWriterMetricGroup.counter("successfullyAppendedRecords");
+        numRecordsInSinceChkptCounter = sinkWriterMetricGroup.counter("numberRecordsInSinceChkpt");
+        successfullyAppendedRecordsSinceChkptCounter = sinkWriterMetricGroup.counter("successfullyAppendedRecordsSinceChkpt");
         numRecordsSendCounter = sinkWriterMetricGroup.getNumRecordsSendCounter();
         numBytesSendCounter = sinkWriterMetricGroup.getNumBytesSendCounter();
         numRecordsSendErrorCounter = sinkWriterMetricGroup.getNumRecordsSendErrorsCounter();
@@ -128,6 +132,10 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         }
         logger.debug("Validating all pending append responses in subtask {}", subtaskId);
         validateAppendResponses(true);
+        // .flush() is called at checkpoint, resetting the counters after all tasks are done.
+        // Set to 0.
+        numRecordsInSinceChkptCounter.dec(numRecordsInSinceChkptCounter.getCount());
+        successfullyAppendedRecordsSinceChkptCounter.dec(successfullyAppendedRecordsSinceChkptCounter.getCount());
     }
 
     /** Close resources maintained by this writer. */

@@ -89,6 +89,7 @@ public class SplitDiscoverer {
                     ReadSession.newBuilder()
                             .setTable(srcTable)
                             .setDataFormat(format)
+                            .setTraceId("Flink:v.1.17:BQ")
                             .setReadOptions(options);
 
             // Optionally specify the snapshot time.  When unspecified, snapshot time is "now".

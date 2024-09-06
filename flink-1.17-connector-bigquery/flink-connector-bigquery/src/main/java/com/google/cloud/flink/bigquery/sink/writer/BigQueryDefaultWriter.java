@@ -67,6 +67,8 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
     /** Accept record for writing to BigQuery table. */
     @Override
     public void write(IN element, Context context) {
+        //Increment the records seen.
+        numRecordsInSinceChkptCounter.inc();
         try {
             ByteString protoRow = getProtoRow(element);
             if (!fitsInAppendRequest(protoRow)) {
@@ -143,6 +145,7 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
         // it would arrive here only if the response was received and there were no errors.
         // the request succeeded without errors (records are in BQ :))
         this.successfullyAppendedRecordsCounter.inc(currentRequestRecordCount);
+        this.successfullyAppendedRecordsSinceChkptCounter.inc(currentRequestRecordCount);
         logger.debug(
                 String.format(
                         "successfullyAppendedRowsCount updated: %d",
