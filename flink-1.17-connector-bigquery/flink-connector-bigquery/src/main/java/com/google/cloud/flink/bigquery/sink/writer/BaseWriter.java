@@ -116,8 +116,9 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         // Count of records successfully appended by the Storage Write API.
         successfullyAppendedRecordsCounter =
                 sinkWriterMetricGroup.counter("successfullyAppendedRecords");
-        numRecordsInSinceChkptCounter = sinkWriterMetricGroup.counter("numberRecordsInSinceChkpt");
-        successfullyAppendedRecordsSinceChkptCounter = sinkWriterMetricGroup.counter("successfullyAppendedRecordsSinceChkpt");
+        numRecordsInSinceChkptCounter = sinkWriterMetricGroup.counter("numRecordsInSinceChkpt");
+        successfullyAppendedRecordsSinceChkptCounter =
+                sinkWriterMetricGroup.counter("successfullyAppendedRecordsSinceChkpt");
         numRecordsSendCounter = sinkWriterMetricGroup.getNumRecordsSendCounter();
         numBytesSendCounter = sinkWriterMetricGroup.getNumBytesSendCounter();
         numRecordsSendErrorCounter = sinkWriterMetricGroup.getNumRecordsSendErrorsCounter();
@@ -135,7 +136,8 @@ abstract class BaseWriter<IN> implements SinkWriter<IN> {
         // .flush() is called at checkpoint, resetting the counters after all tasks are done.
         // Set to 0.
         numRecordsInSinceChkptCounter.dec(numRecordsInSinceChkptCounter.getCount());
-        successfullyAppendedRecordsSinceChkptCounter.dec(successfullyAppendedRecordsSinceChkptCounter.getCount());
+        successfullyAppendedRecordsSinceChkptCounter.dec(
+                successfullyAppendedRecordsSinceChkptCounter.getCount());
     }
 
     /** Close resources maintained by this writer. */

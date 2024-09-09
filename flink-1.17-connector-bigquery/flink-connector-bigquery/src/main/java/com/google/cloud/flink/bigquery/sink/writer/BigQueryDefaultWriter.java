@@ -67,7 +67,7 @@ public class BigQueryDefaultWriter<IN> extends BaseWriter<IN> {
     /** Accept record for writing to BigQuery table. */
     @Override
     public void write(IN element, Context context) {
-        //Increment the records seen.
+        // Increment the records seen.
         numRecordsInSinceChkptCounter.inc();
         try {
             ByteString protoRow = getProtoRow(element);
