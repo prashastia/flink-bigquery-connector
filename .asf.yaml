@@ -10,3 +10,11 @@ github:
   autolink_jira: FLINK
   collaborators:
     - flinkbot
+
+jobs:
+  Nudge:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: 'write'
+    steps:
+      - uses: rpidanny/gha-pr-nudger@v1`
