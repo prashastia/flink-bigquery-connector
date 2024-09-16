@@ -76,6 +76,9 @@ public class BigQueryServicesImpl implements BigQueryServices {
             FixedHeaderProvider.create(
                     "User-Agent", "flink-bigquery-connector/" + FlinkVersion.current().toString());
 
+    public static final String TRACE_ID =
+            String.format("Flink:%s", FlinkVersion.current().toString());
+
     @Override
     public StorageReadClient createStorageReadClient(CredentialsOptions credentialsOptions)
             throws IOException {
@@ -227,12 +230,9 @@ public class BigQueryServicesImpl implements BigQueryServices {
                             .setMaxRetryDelay(Duration.ofSeconds(5)) // maximum delay before retry
                             .build();
 
-            String traceId =
-                    String.format("Flink:%s:%s", FlinkVersion.current().toString(), streamName);
-
             return StreamWriter.newBuilder(streamName, client)
                     .setEnableConnectionPool(enableConnectionPool)
-                    .setTraceId(traceId)
+                    .setTraceId(TRACE_ID)
                     .setRetrySettings(retrySettings)
                     .setWriterSchema(protoSchema)
                     .build();
