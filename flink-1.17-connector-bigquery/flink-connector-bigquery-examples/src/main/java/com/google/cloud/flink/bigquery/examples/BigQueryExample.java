@@ -315,7 +315,7 @@ public class BigQueryExample {
         BigQuerySinkConfig sinkConfig =
                 BigQuerySinkConfig.newBuilder()
                         .connectOptions(sinkConnectOptions)
-                        .deliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                        .deliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
                         .schemaProvider(schemaProvider)
                         .serializer(new AvroToProtoSerializer())
                         .build();

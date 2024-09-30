@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /** Tests for {@link BigQuerySink}. */
 public class BigQuerySinkTest {
@@ -40,9 +40,10 @@ public class BigQuerySinkTest {
                         .serializer(new FakeBigQuerySerializer(ByteString.copyFromUtf8("foo")))
                         .deliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
                         .build();
-        assertNotNull(BigQuerySink.get(sinkConfig, null));
+        assertTrue(BigQuerySink.get(sinkConfig, null) instanceof BigQueryDefaultSink);
     }
 
+    @Test
     public void testGet_withExactlyOnceDeliveryGuarantee() throws IOException {
         BigQuerySinkConfig sinkConfig =
                 BigQuerySinkConfig.newBuilder()
@@ -51,7 +52,7 @@ public class BigQuerySinkTest {
                         .serializer(new FakeBigQuerySerializer(ByteString.copyFromUtf8("foo")))
                         .deliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
                         .build();
-        assertNotNull(BigQuerySink.get(sinkConfig, null));
+        assertTrue(BigQuerySink.get(sinkConfig, null) instanceof BigQueryExactlyOnceSink);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -63,6 +64,6 @@ public class BigQuerySinkTest {
                         .serializer(new FakeBigQuerySerializer(ByteString.copyFromUtf8("foo")))
                         .deliveryGuarantee(DeliveryGuarantee.NONE)
                         .build();
-        assertNotNull(BigQuerySink.get(sinkConfig, null));
+        BigQuerySink.get(sinkConfig, null);
     }
 }
