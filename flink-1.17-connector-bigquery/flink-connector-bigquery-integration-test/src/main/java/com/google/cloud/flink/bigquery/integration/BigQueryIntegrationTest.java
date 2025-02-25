@@ -235,26 +235,16 @@ public class BigQueryIntegrationTest {
                     case "bounded":
                         sourceDatasetName = parameterTool.getRequired("bq-source-dataset");
                         sourceTableName = parameterTool.getRequired("bq-source-table");
-                        if (destDatasetName.equals("IntFloatConversionTest")) {
-                            runIntDoubleConversionTest(
-                                    destGcpProjectName,
-                                    destDatasetName,
-                                    destTableName,
-                                    isExactlyOnceEnabled,
-                                    sinkParallelism,
-                                    enableTableCreation);
-                        } else {
-                            runBoundedSQLFlinkJob(
-                                    sourceGcpProjectName,
-                                    sourceDatasetName,
-                                    sourceTableName,
-                                    destGcpProjectName,
-                                    destDatasetName,
-                                    destTableName,
-                                    isExactlyOnceEnabled,
-                                    sinkParallelism,
-                                    enableTableCreation);
-                        }
+                        runBoundedSQLFlinkJob(
+                                sourceGcpProjectName,
+                                sourceDatasetName,
+                                sourceTableName,
+                                destGcpProjectName,
+                                destDatasetName,
+                                destTableName,
+                                isExactlyOnceEnabled,
+                                sinkParallelism,
+                                enableTableCreation);
                         break;
                     case "unbounded":
                         gcsSourceUri = parameterTool.getRequired("gcs-source-uri");
@@ -284,16 +274,27 @@ public class BigQueryIntegrationTest {
                     case "bounded":
                         sourceDatasetName = parameterTool.getRequired("bq-source-dataset");
                         sourceTableName = parameterTool.getRequired("bq-source-table");
-                        runBoundedFlinkJobWithSink(
-                                sourceGcpProjectName,
-                                sourceDatasetName,
-                                sourceTableName,
-                                destGcpProjectName,
-                                destDatasetName,
-                                destTableName,
-                                isExactlyOnceEnabled,
-                                sinkParallelism,
-                                enableTableCreation);
+                        if (destTableName.equals("IntFloatConversionTest")) {
+                            System.out.println("Hereeee");
+                            runIntFloatConversionTest(
+                                    destGcpProjectName,
+                                    destDatasetName,
+                                    destTableName,
+                                    isExactlyOnceEnabled,
+                                    sinkParallelism,
+                                    enableTableCreation);
+                        } else {
+                            runBoundedFlinkJobWithSink(
+                                    sourceGcpProjectName,
+                                    sourceDatasetName,
+                                    sourceTableName,
+                                    destGcpProjectName,
+                                    destDatasetName,
+                                    destTableName,
+                                    isExactlyOnceEnabled,
+                                    sinkParallelism,
+                                    enableTableCreation);
+                        }
                         break;
                     case "unbounded":
                         gcsSourceUri = parameterTool.getRequired("gcs-source-uri");
@@ -412,7 +413,7 @@ public class BigQueryIntegrationTest {
         env.execute("Flink BigQuery Bounded Read-Write Integration Test");
     }
 
-    private static void runIntDoubleConversionTest(
+    private static void runIntFloatConversionTest(
             String destGcpProjectName,
             String destDatasetName,
             String destTableName,
