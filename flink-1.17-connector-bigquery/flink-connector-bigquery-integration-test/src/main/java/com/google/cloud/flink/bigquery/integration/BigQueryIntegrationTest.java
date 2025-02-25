@@ -37,6 +37,7 @@ import org.apache.flink.formats.avro.typeutils.GenericRecordAvroTypeInfo;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
+import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.annotation.DataTypeHint;
 import org.apache.flink.table.annotation.FunctionHint;
@@ -66,6 +67,7 @@ import com.google.cloud.flink.bigquery.table.config.BigQueryTableConfig;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +75,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -210,7 +213,7 @@ public class BigQueryIntegrationTest {
         Integer sinkParallelism = parameterTool.getInt("sink-parallelism");
         boolean isSqlEnabled = parameterTool.getBoolean("is-sql", false);
         boolean isExactlyOnceEnabled = parameterTool.getBoolean("exactly-once", false);
-        Boolean enableTableCreation = parameterTool.getBoolean("enable-table-creation", false);
+        boolean enableTableCreation = parameterTool.getBoolean("enable-table-creation", false);
 
         // Ignored for bounded run and can be set for unbounded mode (not required).
         String mode = parameterTool.get("mode", "bounded");
@@ -232,16 +235,26 @@ public class BigQueryIntegrationTest {
                     case "bounded":
                         sourceDatasetName = parameterTool.getRequired("bq-source-dataset");
                         sourceTableName = parameterTool.getRequired("bq-source-table");
-                        runBoundedSQLFlinkJob(
-                                sourceGcpProjectName,
-                                sourceDatasetName,
-                                sourceTableName,
-                                destGcpProjectName,
-                                destDatasetName,
-                                destTableName,
-                                isExactlyOnceEnabled,
-                                sinkParallelism,
-                                enableTableCreation);
+                        if (destDatasetName.equals("IntDoubleConversionTest")) {
+                            runIntDoubleConversionTest(
+                                    destGcpProjectName,
+                                    destDatasetName,
+                                    destTableName,
+                                    isExactlyOnceEnabled,
+                                    sinkParallelism,
+                                    enableTableCreation);
+                        } else {
+                            runBoundedSQLFlinkJob(
+                                    sourceGcpProjectName,
+                                    sourceDatasetName,
+                                    sourceTableName,
+                                    destGcpProjectName,
+                                    destDatasetName,
+                                    destTableName,
+                                    isExactlyOnceEnabled,
+                                    sinkParallelism,
+                                    enableTableCreation);
+                        }
                         break;
                     case "unbounded":
                         gcsSourceUri = parameterTool.getRequired("gcs-source-uri");
@@ -374,9 +387,9 @@ public class BigQueryIntegrationTest {
                     .partitionType(TimePartitioning.Type.DAY);
         }
 
-        BigQuerySinkConfig sinkConfig = sinkConfigBuilder.build();
+        BigQuerySinkConfig<GenericRecord> sinkConfig = sinkConfigBuilder.build();
 
-        DataStreamSink boundedStreamSink =
+        DataStreamSink<GenericRecord> boundedStreamSink =
                 env.fromSource(
                                 source,
                                 WatermarkStrategy.noWatermarks(),
@@ -392,6 +405,103 @@ public class BigQueryIntegrationTest {
                                 new GenericRecordAvroTypeInfo(
                                         getAvroTableSchema(sourceConnectOptions)))
                         .sinkTo(BigQuerySink.get(sinkConfig));
+        if (sinkParallelism != null) {
+            boundedStreamSink.setParallelism(sinkParallelism);
+        }
+
+        env.execute("Flink BigQuery Bounded Read-Write Integration Test");
+    }
+
+    private static void runIntDoubleConversionTest(
+            String destGcpProjectName,
+            String destDatasetName,
+            String destTableName,
+            boolean exactlyOnce,
+            Integer sinkParallelism,
+            boolean enableTableCreation)
+            throws Exception {
+
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.enableCheckpointing(CHECKPOINT_INTERVAL);
+        env.setRestartStrategy(RESTART_STRATEGY);
+
+        BigQueryConnectOptions sinkConnectOptions =
+                BigQueryConnectOptions.builder()
+                        .setProjectId(destGcpProjectName)
+                        .setDataset(destDatasetName)
+                        .setTable(destTableName)
+                        .build();
+
+        BigQuerySinkConfig.Builder<GenericRecord> sinkConfigBuilder =
+                BigQuerySinkConfig.<GenericRecord>newBuilder()
+                        .connectOptions(sinkConnectOptions)
+                        .serializer(new AvroToProtoSerializer())
+                        .deliveryGuarantee(
+                                exactlyOnce
+                                        ? DeliveryGuarantee.EXACTLY_ONCE
+                                        : DeliveryGuarantee.AT_LEAST_ONCE)
+                        .streamExecutionEnvironment(env);
+
+        if (enableTableCreation) {
+            sinkConfigBuilder
+                    .enableTableCreation(true)
+                    .partitionField("ts")
+                    .partitionType(TimePartitioning.Type.DAY);
+        }
+
+        BigQuerySinkConfig<GenericRecord> sinkConfig = sinkConfigBuilder.build();
+
+        String schemaJson =
+                "{"
+                        + "  \"type\": \"record\","
+                        + "  \"name\": \"User\","
+                        + "  \"fields\": ["
+                        + "    {\"name\": \"int_field\", \"type\": \"int\"},"
+                        + "    {\"name\": \"long_field\", \"type\": \"double\"}"
+                        + "  ]"
+                        + "}";
+
+        Schema schema = new Schema.Parser().parse(schemaJson);
+
+        ArrayList<GenericRecord> records = new ArrayList<>();
+        String intFieldName = "int_field";
+        String doubleFieldName = "double_field";
+
+        records.add(
+                new GenericRecordBuilder(schema)
+                        .set(intFieldName, Integer.parseInt("1"))
+                        .set(doubleFieldName, Double.parseDouble("1.1"))
+                        .build());
+
+        records.add(
+                new GenericRecordBuilder(schema)
+                        .set(intFieldName, Integer.parseInt("2"))
+                        .set(doubleFieldName, Double.parseDouble("2.1"))
+                        .build());
+
+        records.add(
+                new GenericRecordBuilder(schema)
+                        .set(intFieldName, Integer.parseInt("3"))
+                        .set(doubleFieldName, Double.parseDouble("3.1"))
+                        .build());
+
+        records.add(
+                new GenericRecordBuilder(schema)
+                        .set(intFieldName, Integer.parseInt("4"))
+                        .set(doubleFieldName, Double.parseDouble("4.1"))
+                        .build());
+
+        records.add(
+                new GenericRecordBuilder(schema)
+                        .set(intFieldName, Integer.parseInt("5"))
+                        .set(doubleFieldName, Double.parseDouble("5.1"))
+                        .build());
+
+        DataStreamSource<GenericRecord> dataStream =
+                env.fromCollection(records, new GenericRecordAvroTypeInfo(schema));
+
+        DataStreamSink<GenericRecord> boundedStreamSink =
+                dataStream.sinkTo(BigQuerySink.get(sinkConfig));
         if (sinkParallelism != null) {
             boundedStreamSink.setParallelism(sinkParallelism);
         }
@@ -454,7 +564,7 @@ public class BigQueryIntegrationTest {
         DataStream<String> stringStream =
                 env.fromSource(source, WatermarkStrategy.noWatermarks(), "BigQueryStreamingSource");
 
-        DataStreamSink unboundedStreamSink =
+        DataStreamSink<GenericRecord> unboundedStreamSink =
                 stringStream
                         .map(
                                 new RichMapFunction<String, GenericRecord>() {
