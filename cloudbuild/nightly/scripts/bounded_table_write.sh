@@ -20,7 +20,7 @@ IS_EXACTLY_ONCE_ENABLED=$4
 ENABLE_TABLE_CREATION=$5
 
 # We won't run this async as we can wait for a bounded job to succeed or fail.
-if [ "$ENABLE_TABLE_CREATION" == False ]
+if [ "$ENABLE_TABLE_CREATION" == True ]
 then
   echo "Creating destination table before test"
   # Create the destination table from the source table schema.

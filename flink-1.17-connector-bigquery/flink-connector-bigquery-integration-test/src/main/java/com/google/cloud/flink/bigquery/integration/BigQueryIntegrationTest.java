@@ -235,7 +235,7 @@ public class BigQueryIntegrationTest {
                     case "bounded":
                         sourceDatasetName = parameterTool.getRequired("bq-source-dataset");
                         sourceTableName = parameterTool.getRequired("bq-source-table");
-                        if (destDatasetName.equals("IntDoubleConversionTest")) {
+                        if (destDatasetName.equals("IntFloatConversionTest")) {
                             runIntDoubleConversionTest(
                                     destGcpProjectName,
                                     destDatasetName,
@@ -457,7 +457,7 @@ public class BigQueryIntegrationTest {
                         + "  \"name\": \"User\","
                         + "  \"fields\": ["
                         + "    {\"name\": \"int_field\", \"type\": \"int\"},"
-                        + "    {\"name\": \"long_field\", \"type\": \"double\"}"
+                        + "    {\"name\": \"float_field\", \"type\": \"float\"}"
                         + "  ]"
                         + "}";
 
@@ -465,36 +465,36 @@ public class BigQueryIntegrationTest {
 
         ArrayList<GenericRecord> records = new ArrayList<>();
         String intFieldName = "int_field";
-        String doubleFieldName = "double_field";
+        String floatFieldName = "float_field";
 
         records.add(
                 new GenericRecordBuilder(schema)
                         .set(intFieldName, Integer.parseInt("1"))
-                        .set(doubleFieldName, Double.parseDouble("1.1"))
+                        .set(floatFieldName, Float.parseFloat("1.1"))
                         .build());
 
         records.add(
                 new GenericRecordBuilder(schema)
                         .set(intFieldName, Integer.parseInt("2"))
-                        .set(doubleFieldName, Double.parseDouble("2.1"))
+                        .set(floatFieldName, Float.parseFloat("2.1"))
                         .build());
 
         records.add(
                 new GenericRecordBuilder(schema)
                         .set(intFieldName, Integer.parseInt("3"))
-                        .set(doubleFieldName, Double.parseDouble("3.1"))
+                        .set(floatFieldName, Float.parseFloat("3.1"))
                         .build());
 
         records.add(
                 new GenericRecordBuilder(schema)
                         .set(intFieldName, Integer.parseInt("4"))
-                        .set(doubleFieldName, Double.parseDouble("4.1"))
+                        .set(floatFieldName, Float.parseFloat("4.1"))
                         .build());
 
         records.add(
                 new GenericRecordBuilder(schema)
                         .set(intFieldName, Integer.parseInt("5"))
-                        .set(doubleFieldName, Double.parseDouble("5.1"))
+                        .set(floatFieldName, Float.parseFloat("5.1"))
                         .build());
 
         DataStreamSource<GenericRecord> dataStream =

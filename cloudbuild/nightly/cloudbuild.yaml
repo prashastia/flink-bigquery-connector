@@ -155,12 +155,12 @@ steps:
       - 'CLUSTER_SMALL_TEST_FILE=${_CLUSTER_SMALL_TEST_FILE}'
       - 'SINK_PARALLELISM_SMALL_BOUNDED_JOB=${_SINK_PARALLELISM_SMALL_BOUNDED_JOB}'
 
-# 7. INT and DOUBLE Conversion Test.
+# 7. INT and FLOAT Conversion Test.
   - name: 'gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-nightly'
-    id: 'e2e-bounded-int-double-conversion-test'
+    id: 'e2e-bounded-int-float-conversion-test'
     waitFor: ['e2e-bounded-table-api-all-datatypes-test']
     entrypoint: 'bash'
-    args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_bounded_int_double_conversion_test']
+    args: ['/workspace/cloudbuild/nightly/nightly.sh', 'e2e_bounded_int_float_conversion_test']
     env:
       - 'GCS_JAR_LOCATION_FILE=${_GCS_JAR_LOCATION_FILE}'
       - 'PROJECT_ID=${_PROJECT_ID}'

@@ -144,11 +144,11 @@ case $STEP in
     ;;
 
   # Run the Int Double Conversion Test.
-  e2e_bounded_int_double_conversion_test)
+  e2e_bounded_int_float_conversion_test)
     IS_SQL=False
     ENABLE_TABLE_CREATION=False
     IS_EXACTLY_ONCE_ENABLED=True
-    run_read_write_test "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "" "IntDoubleConversionTest" "$IS_EXACTLY_ONCE_ENABLED" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB" "$SINK_PARALLELISM_SMALL_BOUNDED_JOB" "$IS_SQL" "$ENABLE_TABLE_CREATION"
+    run_read_write_test "$PROJECT_ID" "$REGION_SMALL_TEST_FILE" "$CLUSTER_SMALL_TEST_FILE" "$PROJECT_NAME" "$DATASET_NAME" "" "IntFloatConversionTest" "$IS_EXACTLY_ONCE_ENABLED" "bounded" "$PROPERTIES_SMALL_BOUNDED_JOB" "$SINK_PARALLELISM_SMALL_BOUNDED_JOB" "$IS_SQL" "$ENABLE_TABLE_CREATION"
     exit
     ;;
 
