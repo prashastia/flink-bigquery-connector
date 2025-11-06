@@ -1,6 +1,6 @@
 steps:
   # 1. Create a Docker image containing flink-bigquery-connector repo
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/cloud-builders/docker:19.03.15'
     id: 'docker-build'
     args: ['build', '--tag=gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-presubmit', '-f', 'cloudbuild/presubmit/Dockerfile', '.']
 
