@@ -1,9 +1,4 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'docker-login'
-    entrypoint: 'bash'
-    args: [ '-c', 'docker login' ]
-
 # 1. Create a Docker image containing flink-bigquery-connector repo
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-build'
