@@ -2,7 +2,6 @@ steps:
 # 1. Create a Docker image containing flink-bigquery-connector repo
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-build'
-    waitFor: ['docker-login']
     args: ['build', '--tag=gcr.io/$PROJECT_ID/dataproc-flink-bigquery-connector-presubmit', '-f', 'cloudbuild/presubmit/Dockerfile', '.']
 
 # 2. Fetch maven and dependencies
